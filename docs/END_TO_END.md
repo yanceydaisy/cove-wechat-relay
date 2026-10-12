@@ -6,46 +6,7 @@
 
 ## 总览：为什么需要这么长的链路
 
-```text
-                           ┌────────────── Windows 电脑 ──────────────┐
-                           │                                         │
-你在微信发送文字 ────────────→│ 官方微信 4.x                           │
-                           │   ↓ WeChatDB + Listener                 │
-                           │ Windows Adapter                         │
-                           │   └─ POST /wechat/agent/events          │
-                           └───────────────┬─────────────────────────┘
-                                           │ HTTPS / Bearer token
-                                           ▼
-                           ┌────────────── VPS ─────────────────────┐
-                           │ Cove Bridge                             │
-                           │   ├─ 接收、去重、整理事件                │
-                           │   ├─ 会话队列 / required reply          │
-                           │   ├─ MCP Events 订阅管理                │
-                           │   └─ webhook wake + watchdog            │
-                           └───────────────┬─────────────────────────┘
-                                           │ MCP Events webhook
-                                           ▼
-                           ┌────────── ChatGPT 官端 ─────────────────┐
-                           │ Work 对话 / 已连接 MCP 插件             │
-                           │   1. 收到 cove.bridge.requested         │
-                           │   2. 调 cove_bridge_get_event           │
-                           │   3. 生成回复                           │
-                           │   4. 调 cove_bridge_reply               │
-                           └───────────────┬─────────────────────────┘
-                                           │ MCP tool call
-                                           ▼
-                           ┌────────────── VPS ─────────────────────┐
-                           │ Bridge 将回复变成待发送 command          │
-                           │ Adapter GET /wechat/agent/next         │
-                           └───────────────┬─────────────────────────┘
-                                           │ HTTPS
-                                           ▼
-                           ┌────────────── Windows ─────────────────┐
-                           │ Adapter → 官方微信 GUI 发送文字          │
-                           │ Adapter POST /wechat/agent/result      │
-                           │ Bridge 记录成功 ACK                     │
-                           └─────────────────────────────────────────┘
-```
+![Cove WeChat Relay 端到端消息流](../assets/architecture-flow.svg)
 
 这不是让 Windows 微信直接调用 OpenAI API。**模型推理在 ChatGPT 官端的 Work 运行中进行**，VPS 只负责接力、保存状态、通知和回执。
 
