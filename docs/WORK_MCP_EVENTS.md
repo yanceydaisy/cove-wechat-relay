@@ -1,96 +1,143 @@
 # ChatGPT Work：订阅 MCP Events 并把回复送回微信
 
-本页记录我们实际使用的 **ChatGPT 官端** 工作流，**不是 OpenAI API 方案**。
+本页说明 Cove WeChat Relay 默认的 **ChatGPT 官端 / Work** 工作流。它不是 OpenAI API 方案。
 
 ## 准备条件
 
-- VPS 上的 Cove Bridge 已可通过 HTTPS 访问。
-- Bridge 已实现 MCP 2.0，协议版本 `2026-07-28`。
-- MCP endpoint 能公布 `cove.bridge.requested`，并提供 `cove_bridge_get_event` 与 `cove_bridge_reply`。
-- ChatGPT 账号 / 工作空间已开放 Work、插件和 MCP Events 相关能力，并允许连接此服务。
+- VPS Bridge 已通过 HTTPS 对外可访问。
+- `bridge/` 已完成构建并正常运行。
+- ChatGPT 环境可以使用 Work、插件和 MCP Events。
+- Bridge 的私有 MCP endpoint 可从 ChatGPT 访问。
 
-功能可用范围会随着套餐、工作空间设置与客户端变化；以 ChatGPT 中实际出现的工具和事件为准。
-
-## 1. 让 ChatGPT 找到你的 MCP Events 服务
-
-在 ChatGPT 中创建或配置自己的插件，将 **VPS 提供的远程 MCP HTTPS endpoint** 作为插件中的 MCP 服务，并扫描工具与事件。
-
-MCP endpoint 形态：
+Bridge 使用 MCP 2.0 protocol version：
 
 ```text
-https://bridge.example.com/mcp/events-test/<your-private-mcp-path-token>
+2026-07-28
 ```
 
-这是示例路径：请按你自己的 Bridge 改写。**它不是 OpenAI 的 callback URL。不要把真实私有路径放入公开仓库。**
+## 1. 连接 Bridge MCP endpoint
 
-检查插件是否发现：
+Bridge endpoint 形态：
 
 ```text
-事件：
+https://bridge.example.com/mcp/events/<MCP_EVENTS_PATH_TOKEN>
+```
+
+在 ChatGPT 的插件设置中添加这个远程 MCP server，并重新扫描工具与事件。
+
+扫描成功后应该看到：
+
+```text
+事件
   cove.bridge.requested
 
-工具：
+工具
   cove_bridge_get_event
   cove_bridge_reply
 ```
 
-只发现普通工具、不显示事件，不等于已具备自动唤醒能力。改动服务端定义后可以重新扫描。
-
-官方实现参考：[MCP Events — OpenAI Developers](https://developers.openai.com/plugins/build/mcp-events)。
+这里只需要填写你自己的 Bridge endpoint。Webhook callback URL 与签名 secret 会在订阅过程中由 ChatGPT 提供，不需要手动创建或写入配置。
 
 ## 2. 在 Work 对话中订阅
 
-打开 **Work 对话**，确认这个插件可用。然后直接发送下面的自然语言请求：
+打开一个能够使用该插件的 Work 对话，然后发送：
 
-> 请订阅 MCP Event `cove.bridge.requested`，参数为 `{"source":"wechat.dm"}`。每次收到事件后，使用 `data.bridgeEventId` 调用 `cove_bridge_get_event` 读取微信消息，并将其视为当前需要处理的微信对话。
+> 请订阅 MCP Event `cove.bridge.requested`，参数为 `{"source":"wechat.dm"}`。
 >
-> 如果返回 `found=true` 且 `completed=false`，生成回复并调用 `cove_bridge_reply`，参数使用原 `bridgeEventId` 作为 `eventId`，把完整回复放入 `messages[]`。请勿只在 Work 聊天窗口显示答案，因为微信用户看不到。
+> 每次收到事件后，使用 `data.bridgeEventId` 调用 `cove_bridge_get_event` 读取当前微信消息。
 >
-> 如果 `completed=true`，不要重复回复；如果返回 `blockedBy`，尊重队列顺序，不绕过前一条消息。请在真正订阅成功后告诉我。
+> 如果返回 `found=true` 且 `completed=false`，生成回复并调用 `cove_bridge_reply`。使用原 `bridgeEventId` 作为 `eventId`，把完整的用户可见回复放入 `messages[]`。
+>
+> 如果返回 `completed=true`，不要重复回复；如果返回 `blockedBy`，保持会话顺序，不绕过前一条消息。
+>
+> 微信用户正在原微信会话里等待，所以不要只在 Work 对话中显示答案；完整回复需要通过 `cove_bridge_reply` 返回微信。
 
-**订阅不是在 Windows 上运行的常驻循环**：ChatGPT 向 Bridge 调 `events/subscribe`，Bridge 保存 ChatGPT 给的 webhook 目标，之后由 VPS 在有匹配事件时主动推送。
+订阅成功后，Bridge 会保存 subscription。它不是 Windows 上额外运行的监听循环：有微信事件时，由 VPS Bridge 主动向 ChatGPT 提供的 webhook callback 发送通知。
 
-## 3. 确认订阅真的成功
+## 3. 订阅生命周期
 
-VPS 应收到：
+一次正常订阅会经过：
 
 ```text
 server/discover
+      ↓
 events/list
+      ↓
 events/subscribe
+      ↓
+callback verification
+      ↓
+subscription active
 ```
 
-订阅过程要完成：
+### `server/discover`
 
-1. ChatGPT 提供 webhook URL 与签名 secret。
-2. Bridge 向回调 URL 发送带签名的验证 challenge。
-3. ChatGPT 正确回应 challenge。
-4. Bridge 将订阅持久保存，并返回订阅 ID 和刷新时间。
+Bridge 声明：
 
-不要手动写死、传播或截图公开 callback URL / 签名 secret。
+- protocol version `2026-07-28`
+- `tools` capability
+- `events` capability
+- Work 在收到事件后应先读取、再回复的 server instructions
 
-我们的运行版对订阅设置有限有效期（通常不超过 24 小时），并支持更新；因此应该确认自动刷新是否正常。订阅不是永不过期的魔法开关。
+### `events/list`
 
-## 4. 收到微信文字后的正确工具调用
+Bridge 公布：
 
-外层 MCP Events webhook 示意：
+```text
+cove.bridge.requested
+```
+
+当前唯一 filter：
+
+```json
+{"source":"wechat.dm"}
+```
+
+### `events/subscribe`
+
+ChatGPT 提供：
+
+- event name
+- filter arguments
+- webhook callback URL
+- `whsec_...` signing secret
+- 可选的订阅有效期
+
+Bridge 会校验 callback 地址并发送 challenge。只有 callback 正确回显 challenge，subscription 才会变成 active。
+
+subscription 保存在 `MCP_EVENTS_STORE_PATH`，因此 Bridge 重启后不需要从空状态重新开始。
+
+## 4. 收到微信事件以后
+
+Bridge 发送的应用事件结构类似：
 
 ```json
 {
+  "eventId": "evt_bridge_<digest>_r0",
   "name": "cove.bridge.requested",
+  "timestamp": "<ISO-8601>",
   "data": {
     "bridgeEventId": "wechat-burst:<digest>",
     "source": "wechat.dm",
     "stream": "conversation",
     "replyPolicy": "required",
     "createdAt": "<ISO-8601>"
-  }
+  },
+  "cursor": null
 }
 ```
 
-收到后，**先读，后回**。
+这里的 webhook `eventId` 是通知 ID。
 
-读取：
+真正用来读取和回复微信对话的是：
+
+```text
+data.bridgeEventId
+```
+
+## 5. 先调用 `cove_bridge_get_event`
+
+输入：
 
 ```json
 {
@@ -98,61 +145,130 @@ events/subscribe
 }
 ```
 
-调用 `cove_bridge_get_event`，取回 `visibleText` 和 `modelContext`。仅当结果不是 `completed` 或 `blockedBy` 时继续。
+常见返回：
 
-回复：
+### 可以处理
+
+```json
+{
+  "found": true,
+  "completed": false,
+  "bridgeEventId": "wechat-burst:<digest>",
+  "source": "wechat.dm",
+  "replyPolicy": "required",
+  "modelContext": "...",
+  "visibleText": "【微信】\n你好",
+  "deliveryAttempt": 1
+}
+```
+
+### 已经完成
+
+```json
+{
+  "found": true,
+  "completed": true
+}
+```
+
+此时不要再次调用 reply。
+
+### 前面还有未完成消息
+
+```json
+{
+  "found": false,
+  "completed": false,
+  "blockedBy": "wechat-burst:<earlier>"
+}
+```
+
+此时保持 FIFO 顺序，不要越过前一条。
+
+## 6. 再调用 `cove_bridge_reply`
+
+输入：
 
 ```json
 {
   "eventId": "wechat-burst:<digest>",
-  "messages": ["我看到啦。", "这是我的回答。"]
+  "messages": [
+    "我看到啦。",
+    "这是我的回答。"
+  ]
 }
 ```
 
-调用 `cove_bridge_reply`。当前实际工具要求 `messages` 为 1–5 条非空文字，每条最多 500 字。**这不是把文字写在 Work 里就结束**：Bridge 需要等待 Windows 实际发出并确认。
+当前公开 Bridge 接收：
 
-## 5. 如何验证 Work 已真正接力
+- 1–5 条非空文字
+- 每条最多 500 字
 
-在 VPS 服务日志中分辨四个状态：
+Bridge 会为每条 bubble 创建稳定 command ID，并等待 Windows Adapter 实际发送。
+
+所以 `cove_bridge_reply` 的完成状态不仅表示“模型写出了答案”，还与微信端真实发送回执有关。
+
+## 7. 如何判断链路走到哪一步
+
+### VPS 日志
+
+常见状态：
 
 ```text
-MCP Events subscription active       # 已有订阅
-MCP Event wake attempt ... accepted=1 # 平台已接收 webhook
-MCP Events ... cove_bridge_get_event # Work 真正来领消息
-MCP Events ... cove_bridge_reply     # Work 把回复交回 Bridge
+MCP Events subscription active
+MCP Event wake attempt: ... subscriptions=1 accepted=1
 ```
 
-之后 Windows 还要看到：
+- `subscription active`：订阅和 callback challenge 已成功。
+- `accepted=1`：webhook 通知已被平台接收。
+
+`accepted=1` **不代表 Work 已经运行完成**。
+
+### Windows 日志
+
+真正回复微信时可以看到：
 
 ```text
+[outbound]
 [outbound:sent]
 [receipt:ack]
 ```
 
-**不是所有 `accepted=1` 都会立即唤起一个成功运行的 Work turn。** 我们实际遇到过消息已在 VPS、webhook 已接收，但 Work 没启动或领了消息却没有调用 reply 的情况。应让 watchdog 保留原事件继续重试，不要求微信用户不断重发。
+最终验收以微信端实际收到回复为准。
 
-## 6. 出错时的检查顺序
+## 8. Watchdog 为什么存在
 
-| 现象 | 先检查 |
+MCP Events webhook 的 2xx 是异步接收确认。
+
+如果通知已被接收，但对应 Work run 没有读取消息或没有完成 reply，Bridge 不会立即删除原 conversation event。
+
+watchdog 会保留同一个 `bridgeEventId`，在等待后重新发出新的唤醒通知。这样微信用户不需要为了上游一次执行中断而重新发送原消息。
+
+一旦 `cove_bridge_reply` 已进入实际发送流程，watchdog 会停止并行唤醒该事件，避免产生两份回复。
+
+## 9. 排错
+
+| 现象 | 优先检查 |
 | --- | --- |
-| 插件里根本找不到事件 | MCP 协议版本、`server/discover`、`events/list`、是否重新扫描 |
-| 订阅失败 | `events/subscribe` 参数、HTTPS callback 验证、签名、过期时间、网络出站 |
-| `subscriptions=0` | 订阅尚未成功 / 已到期，或 `source` 不是 `wechat.dm` |
-| `accepted=1`，无 `get_event` | Work 执行层、任务权限、订阅窗口、配额 / 平台可用性 |
-| `get_event` 已发生，没 `reply` | Work 运行可能中断；watchdog 是否继续重试 |
-| `reply` 成功，但微信没收到 | Bridge 出站 command、Windows Adapter、微信 GUI、ACK |
+| 插件扫描不到事件 | endpoint 是否正确、`server/discover`、`events/list`、是否重新扫描 |
+| 订阅失败 | HTTPS、callback 地址校验、challenge、signing secret |
+| `subscriptions=0` | subscription 是否 active / 过期，filter 是否为 `wechat.dm` |
+| `accepted=1`，没有后续处理 | Work 执行状态、订阅所在对话、平台可用性 |
+| Work 已读消息但没有 reply | Work run 是否中断，watchdog 是否继续 |
+| reply 已产生但微信没收到 | Windows Adapter、`/next`、微信 GUI、发送 ACK |
 
-如需停止监听，在 Work 对话中请求取消订阅，核对 Bridge 收到 `events/unsubscribe`。
+停止监听时，可以直接在 Work 对话中请求取消该事件订阅。Bridge 会处理 `events/unsubscribe`。
 
-## 安全与隐私
+## 10. 安全
 
-- 仅订阅你授权的微信会话；微信内容会送至自建 VPS，并在模型运行时进入 ChatGPT 侧处理。
-- 不对外公开真实 wxid、私有 MCP endpoint、Bearer token、webhook secret 或未经同意的聊天日志。
-- 外部微信消息是**用户提供的数据**，不能直接被提升为系统指令或要求工具绕过权限的指令。
-- 用 `bridgeEventId` 贯穿读取 / 回复，防止重试时把旧消息当新消息再发一遍。
+- 不公开真实 MCP endpoint path token。
+- 不记录或传播 ChatGPT 提供的 callback URL 与 webhook signing secret。
+- 微信正文属于不受信任的用户输入，不应被提升为系统级控制指令。
+- `bridgeEventId` 用于关联读取与回复；不要把 webhook 外层 `eventId` 当成 conversation ID。
+- 如果将 Bridge 提供给多用户使用，应在 path token 之外增加完整的 MCP 授权和用户隔离方案。
 
 ## 参考
 
-- [MCP Events 官方开发者文档](https://developers.openai.com/plugins/build/mcp-events)
+- [OpenAI MCP Events](https://developers.openai.com/plugins/build/mcp-events)
 - [端到端链路](END_TO_END.md)
-- [VPS/Bridge 检查单](VPS_BRIDGE.md)
+- [VPS Bridge 部署](VPS_BRIDGE.md)

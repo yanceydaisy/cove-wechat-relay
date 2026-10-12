@@ -4,6 +4,8 @@ __pycache__/
 *.py[cod]
 *.log
 logs/
+node_modules/
+dist/
 .env
 .env.*
 !.env.example

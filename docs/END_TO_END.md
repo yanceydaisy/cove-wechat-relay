@@ -1,59 +1,109 @@
 # 从微信到 ChatGPT 官端：端到端链路
 
-> **范围：文字流 v0。** 本教程依据真实运行的 **Windows 官方微信 → Windows Adapter → VPS Cove Bridge → MCP Events → ChatGPT Work → Cove Bridge → Windows 微信** 链路整理。
+> **范围：文字流 v0。** 本仓库同时包含 Windows Adapter 与 VPS Bridge，默认链路为：
 >
-> **发布状态说明**：本仓库当前包含 Windows Adapter、HTTP 协议和部署说明；完整的 VPS Cove Bridge 是另一套服务，**其独立可部署的开源精简版尚未随本仓库发布**。因此仅克隆本仓库还不能一键复现全链路。文中的 VPS 部分是部署要求和接口契约，不应误当作已经附带的 Bridge 安装脚本。
+> **Windows 官方微信 → Windows Adapter → VPS Cove Bridge → MCP Events → ChatGPT Work → Cove Bridge → Windows 微信**
 
-## 总览：为什么需要这么长的链路
+## 整体架构
 
 ![Cove WeChat Relay 端到端消息流](../assets/architecture-flow.svg)
 
-这不是让 Windows 微信直接调用 OpenAI API。**模型推理在 ChatGPT 官端的 Work 运行中进行**，VPS 只负责接力、保存状态、通知和回执。
+这不是让 Windows 微信直接调用 OpenAI API。模型推理发生在 ChatGPT 官端的 Work 运行中；Windows 负责真实微信读写，VPS Bridge 负责接力、管理会话状态、发送 MCP Events 通知和回收回复。
 
-## 三个位置，各负责什么
+## 三个位置分别负责什么
 
-| 位置 | 必须运行的组件 | 负责什么 | 不负责什么 |
-| --- | --- | --- | --- |
-| Windows | 官方微信、Python Adapter、Supervisor | 收文字、发文字、确认发送、保持在线 | 不运行模型、不主动启动 Work |
-| 你的 VPS | HTTPS 入口、Cove Bridge、MCP Events 服务 | 入站、排队、发唤醒 webhook、MCP tools、回复交付 | 不替 Work 执行模型推理 |
-| ChatGPT 官端 | 可使用 Work + MCP Events 的对话、已连接插件 | 收事件、读取消息、生成文字、调用 reply 工具 | 不能替代 Windows 操作真实微信 |
+| 位置 | 运行组件 | 主要职责 |
+| --- | --- | --- |
+| Windows | 官方微信、Python Adapter、Supervisor | 读取微信文字、发送回复、确认真实发送结果、保持在线 |
+| VPS | Cove WeChat Relay Bridge、HTTPS 反向代理 | 接收入站、合并 burst、排队、MCP Events、reply command、ACK |
+| ChatGPT 官端 | Work 对话、已连接的 MCP 插件 | 接收事件、读取当前微信消息、生成回复、调用 reply 工具 |
 
-## 按顺序部署
+## 从零部署
 
-**第一步｜准备 VPS Bridge**
+### 1. 部署 VPS Bridge
 
-建议准备 Linux VPS、域名、HTTPS、Node.js 22，并部署具有 [Bridge 协议](BRIDGE_PROTOCOL.md) 的服务。具体检查项和 systemd / 反向代理示例见 [VPS 与 Bridge](VPS_BRIDGE.md)。
+进入仓库的 `bridge/`：
 
-注意：单有 HTTP `/wechat/agent/*` 还不够，Bridge 还需要 MCP 2.0 Events 订阅、webhook 投递、`cove_bridge_get_event` / `cove_bridge_reply` 两个工具，以及回复路由和状态机。
+```bash
+cd bridge
+npm ci
+npm run typecheck
+npm run build
+npm test
+```
 
-**第二步｜准备 Windows Adapter**
+配置 Bridge：
 
-Windows 登录官方微信 4.x，配置：
+```text
+PORT=8787
+HOST=127.0.0.1
+WECHAT_AGENT_TOKEN=<long random token>
+MCP_EVENTS_PATH_TOKEN=<long url-safe random token>
+MCP_EVENTS_STORE_PATH=.local/mcp-event-subscriptions.json
+```
+
+启动：
+
+```bash
+npm start
+```
+
+再使用 Caddy、Nginx 等反向代理提供 HTTPS。完整 VPS 配置见 [VPS Bridge 部署](VPS_BRIDGE.md)。
+
+### 2. 部署 Windows Adapter
+
+Windows 登录官方微信 4.x，并配置：
 
 ```text
 COVE_WECHAT_BRIDGE_URL=https://bridge.example.com
-COVE_WECHAT_AGENT_TOKEN=<your-agent-token>
-COVE_WECHAT_TARGET=<your-whitelisted-conversation-id>
+COVE_WECHAT_AGENT_TOKEN=<same token as VPS>
+COVE_WECHAT_TARGET=<whitelisted conversation id>
 ```
 
-按 [README](../README.md) 完成安装，先手动运行，通过后再安装计划任务。
+安装 Python 依赖并先手动运行 `adapter.py`。确认 Listener、outbound sender 和 heartbeat 正常后，再安装计划任务。详见 [Windows 部署与排错](DEPLOY.md)。
 
-**第三步｜ChatGPT 官端连接 MCP Events**
+### 3. 在 ChatGPT 连接 MCP Events
 
-将 Bridge 的私有 MCP Events HTTPS endpoint 连接为 ChatGPT 可用的插件，并在 Work 对话中订阅 `cove.bridge.requested`，过滤 `source=wechat.dm`。详细步骤与可复制指令见 [Work 订阅指南](WORK_MCP_EVENTS.md)。
+Bridge 的 MCP endpoint：
 
-**第四步｜从微信发送一条文字测试**
+```text
+https://bridge.example.com/mcp/events/<MCP_EVENTS_PATH_TOKEN>
+```
 
-先发非常短的一句话，在 Windows / VPS / Work 三侧依次查：
+将该 endpoint 连接为 ChatGPT 插件的 MCP 服务，确认能发现：
+
+```text
+event:
+  cove.bridge.requested
+
+tools:
+  cove_bridge_get_event
+  cove_bridge_reply
+```
+
+然后在 Work 对话中订阅：
+
+```text
+cove.bridge.requested
+{"source":"wechat.dm"}
+```
+
+详细步骤见 [Work MCP Events 指南](WORK_MCP_EVENTS.md)。
+
+### 4. 发送第一条测试消息
+
+从目标微信会话发送一条短文字，依次观察：
 
 ```text
 Windows [inbound]
     ↓
-Bridge POST /wechat/agent/events 返回 ok
+Bridge /wechat/agent/events
     ↓
-Bridge 产生待回复事件
+burst flush
     ↓
-MCP Event wake attempt: subscriptions=1 accepted=1
+conversation queue
+    ↓
+MCP Event wake ... accepted=1
     ↓
 Work cove_bridge_get_event
     ↓
@@ -61,57 +111,95 @@ Work cove_bridge_reply
     ↓
 Windows [outbound:sent]
     ↓
-Bridge 回复标记 completed
+Bridge receives /wechat/agent/result
 ```
 
-不要用“Work 对话里显示了回复”代替“微信真的收到了回复”作为最终验收。
+最终验收以**微信端实际收到回复**为准。
 
-## 文字消息的一次完整往返
+## 一条文字消息如何完成往返
 
-1. Windows `Listener` 从已登录官方微信读取**文本**消息，并检查目标会话。
-2. Adapter 为消息生成确定性 `eventId`，将 `conversationId` 和 `text` 用 Bearer token POST 给 Bridge。
-3. Bridge 接收后按会话整理；我们的实际运行版会对同一会话 4 秒安静窗口内的消息合并成一轮（最长 8 秒，最多 10 条）。这属于 Bridge 逻辑，**不是本仓库 Adapter 的功能**。
-4. Bridge 将该轮记录为需要回复的 `wechat.dm` conversation event，并为已订阅的 Work webhook 发送 `cove.bridge.requested`；唤醒载荷只带事件标识及少量元数据，不直接把完整文字当 webhook 正文。
-5. Work 根据 `data.bridgeEventId` 调 `cove_bridge_get_event`，读取本轮 `visibleText` 和 `modelContext`。
-6. 模型生成回复后，必须调 `cove_bridge_reply`，例如 `{"eventId":"<bridgeEventId>","messages":["收到啦","我来回答你"]}`。
-7. Bridge 按每条 bubble 建立稳定 command ID；Windows Adapter 长轮询拿到 command 后通过官方微信 GUI 发文字、确认、ACK。
-8. Bridge 全部收到发送结果，才将本轮回复视为已交付。
+1. Windows `Listener` 从已登录的官方微信读取文字消息，并检查发送者是否属于白名单会话。
+2. Adapter 生成确定性的 `eventId`，将 `conversationId` 与 `text` 用 Bearer token POST 到 Bridge。
+3. Bridge 在同一会话内使用短暂安静窗口合并连续消息。默认安静窗口 4 秒、最长等待 8 秒、每轮最多 10 条。
+4. burst 被转换成一条 `wechat.dm` conversation event，并进入 FIFO 队列。
+5. Bridge 为当前队首事件发送 `cove.bridge.requested` MCP Event。
+6. Work 使用 webhook 中的 `data.bridgeEventId` 调 `cove_bridge_get_event`。
+7. `cove_bridge_get_event` 返回 `visibleText` 和 `modelContext`。微信正文被视为用户输入，而不是系统级指令。
+8. Work 生成回复并调用 `cove_bridge_reply`，将完整回复放入 `messages[]`。
+9. Bridge 为每条回复 bubble 生成稳定的 command ID，并等待 Windows Adapter 长轮询领取。
+10. Windows Adapter 调用官方微信 GUI 发送文字，并通过本地微信 DB 确认发送结果。
+11. Adapter POST `/wechat/agent/result` 返回成功 ACK。
+12. 所有回复 bubble 均确认发送后，Bridge 将本轮标记为完成并继续下一条会话事件。
 
-## 两类事件 ID，不能混用
+## 三种 ID
 
-- **微信入站 eventId**：Windows Adapter 生成，如 `wechat:<target>:<create_time>:<local_id>`；用于上报去重。
-- **Bridge eventId**：VPS 聚合的一轮对话，例如 `wechat-burst:<digest>`；用它让 `get_event` 找到消息，并在 `reply` 中回传。
+### Windows 入站 eventId
 
-MCP webhook 本身还有独立 `eventId`，用于 webhook 的幂等投递；**需要传给 `cove_bridge_get_event` 的是 `data.bridgeEventId`，不是外层 webhook eventId**。
+由 Adapter 生成：
 
-## 状态与故障边界
+```text
+wechat:<target>:<create_time>:<local_id>
+```
 
-| 已看到的日志 / 现象 | 意味着 | 下一步检查 |
+用于 Windows → Bridge 的入站幂等。
+
+### Bridge eventId
+
+连续消息聚合后生成：
+
+```text
+wechat-burst:<digest>
+```
+
+这是 Work 真正读取和回复的对话事件 ID。`cove_bridge_get_event` 与 `cove_bridge_reply` 都围绕它工作。
+
+### MCP webhook eventId
+
+每次通知 webhook 都有自己的 `eventId`。watchdog 重新唤醒时会生成新的通知 ID，但 `data.bridgeEventId` 保持不变。
+
+因此：
+
+> 传给 `cove_bridge_get_event` 的是 `data.bridgeEventId`，不是外层 webhook 的 `eventId`。
+
+## 状态与排错
+
+| 现象 | 表示什么 | 优先检查 |
 | --- | --- | --- |
-| Windows 没有 `[inbound]` | 还未确认本地监听到文字 | 登录状态、会话白名单、微信版本、Listener |
-| Windows `[inbound:error]` | 入站 HTTP 重试后仍失败 | 网络 / token / Bridge HTTPS |
-| Bridge 已收到入站但无 `subscriptions=1` | 订阅不存在、失效或 source 不匹配 | Work MCP Events 订阅 |
-| `accepted=1`，但没有 `get_event` | webhook 被接收，**不代表** Work 一定启动了 | Work 可用性、权限、额度、订阅窗口 |
-| 有 `get_event`，但没有 `reply` | Work 读过消息，但未完成回传 | Work 任务执行、重试与路由指令 |
-| 已有 `reply`，但没有 `outbound:sent` | Bridge → Windows 下发 / 发送环节未完成 | command 队列、长轮询、微信 GUI |
-| 已有 `outbound:sent`，但无 ACK | 可能已真实发出，仅回执待重试 | Adapter journal 和 `/result` |
+| Windows 没有 `[inbound]` | 本地尚未读到目标文字 | 微信登录、目标会话、Listener |
+| Windows 有 `[inbound:error]` | Adapter 无法把消息交给 Bridge | 网络、HTTPS、Bearer token |
+| Bridge 有事件，但 `subscriptions=0` | 没有可用的 Work 订阅 | MCP Events 订阅、过期时间、source |
+| `accepted=1`，没有 `get_event` | 平台收到了 webhook，但 Work 尚未领取 | Work 可用性、订阅状态、平台执行情况 |
+| 有 `get_event`，没有 `reply` | Work 已读消息但未完成回传 | Work 执行、watchdog |
+| 有 `reply`，没有 `outbound:sent` | Bridge 已有回复，但 Windows 尚未确认发送 | long poll、微信 GUI、Adapter 在线状态 |
+| 有 `outbound:sent`，ACK 暂时失败 | 微信大概率已真实发出，回执仍在补发 | Windows delivery journal、`/result` |
 
-### 两个特别重要的限制
+## 两个重要限制
 
-**1. webhook accepted 只是平台接收成功。** MCP Events 回调 2xx 并不保证 Work run 已启动或已回复。Bridge 应保留同一个 `bridgeEventId`，为 watchdog 重试生成新的 webhook delivery ID。
+### Webhook accepted 不等于回复完成
 
-**2. VPS 重启可能影响尚未处理完成的消息。** 当前 Bridge 的部分运行状态保存在内存中。如果 VPS 在消息尚未完成处理或回复发送前重启，这些未完成状态可能不会自动恢复。 如果你希望把它用于长期运行，建议为待处理事件和发送队列增加持久化存储，并在服务启动后恢复未完成任务。
+MCP Events callback 返回 2xx 只表示平台接收了通知。它不保证 Work 已经启动，更不保证回复已经送达微信。
 
-## 安全和发布边界
+Bridge 会保留原 `bridgeEventId`。如果事件尚未真正进入 reply 流程，watchdog 会在等待后再次发送唤醒通知。
 
-- 仓库不得提交真实 wxid、Bridge token、MCP endpoint 私有路径或订阅 callback URL / secret。
-- Windows Adapter 用独立 Bearer token；MCP endpoint 要做访问控制。仅靠长随机秘密路径不是通用鉴权方案。
-- 从生产 VPS 提取开源 Bridge 时，只提取微信文本 + MCP Events 所需模块，不能把我们私人的其他模块、账户信息、数据文件和历史聊天一起打包。
-- 这一版不传图片、语音、文件或其他媒体；本教程也不引入这些能力。
+### VPS 重启可能影响未完成消息
+
+MCP Events subscription 会持久化保存；但当前 conversation queue、burst buffer 与未完成的 outbound command 仍包含内存状态。
+
+如果 VPS 恰好在消息处理过程中重启，未完成消息可能无法自动恢复。需要更强恢复能力时，可以把这些运行状态迁移到 SQLite、Postgres 或其他持久化队列。
+
+## 安全建议
+
+- Windows Adapter 使用独立的高强度 Bearer token。
+- MCP Events endpoint 使用独立的私有 path token；不要把真实路径放入公开仓库或截图。
+- Bridge 应通过 HTTPS 暴露，内部 Node 端口尽量只监听本机或私网。
+- callback URL 在订阅和投递时都应进行 SSRF 防护；本仓库 Bridge 已包含公网地址校验与 DNS pinning。
+- 微信正文属于用户输入。不要把消息内容拼接成系统级控制指令。
+- 不提交真实 wxid、token、callback URL、webhook secret 或聊天日志。
 
 ## 下一步阅读
 
-- [VPS 与 Bridge](VPS_BRIDGE.md)
-- [Work MCP Events 订阅](WORK_MCP_EVENTS.md)
-- [文字版 Bridge HTTP 协议](BRIDGE_PROTOCOL.md)
+- [VPS Bridge 部署](VPS_BRIDGE.md)
+- [Work MCP Events](WORK_MCP_EVENTS.md)
+- [Bridge HTTP 协议](BRIDGE_PROTOCOL.md)
 - [Windows 部署与排错](DEPLOY.md)
+- [Bridge 独立说明](../bridge/README.md)

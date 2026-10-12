@@ -1,39 +1,77 @@
-# 部署与排错 — Text Relay v0
+# Windows Adapter 部署与排错
+
+本页只讲 Windows 微信侧。完整链路见 [端到端链路](END_TO_END.md)。
 
 ## 推荐结构
 
 ```text
 Windows PC
-├─ 官方微信
+├─ 官方微信 4.x
 └─ Cove WeChat Adapter
        │ HTTPS
        ▼
-Bridge
-       │
+VPS Cove Bridge
+       │ MCP Events
        ▼
-Agent / LLM
+ChatGPT Work
 ```
 
-## 第一次部署
+## 1. 准备环境
 
-1. Windows 登录官方微信。
-2. 安装 Python 3.12。
-3. 创建 `.venv`。
-4. 安装 `requirements.txt`。
-5. 配置三个 `COVE_WECHAT_*` 用户环境变量。
-6. 先手动运行 `adapter.py`。
-7. 确认 Listener、outbound sender、heartbeat 正常。
-8. 再运行 `install-autostart.ps1`。
+需要 Windows 10 / 11、已登录的官方微信桌面版 4.x、Python 3.12+ 和 Git。
 
-## 日志
+```powershell
+git clone https://github.com/yanceydaisy/cove-wechat-relay.git
+cd cove-wechat-relay
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
 
-默认：
+## 2. 配置
+
+设置三个 Windows 用户环境变量：
+
+```text
+COVE_WECHAT_BRIDGE_URL=https://bridge.example.com
+COVE_WECHAT_AGENT_TOKEN=<same token as VPS>
+COVE_WECHAT_TARGET=<target conversation id>
+```
+
+- `COVE_WECHAT_BRIDGE_URL`：VPS Bridge 的 HTTPS 根地址
+- `COVE_WECHAT_AGENT_TOKEN`：Windows Adapter 专用 Bearer token
+- `COVE_WECHAT_TARGET`：允许监听与回复的单个微信会话 ID
+
+不要把真实凭据或会话 ID 写进仓库。
+
+## 3. 手动启动
+
+先确保微信已经登录：
+
+```powershell
+.\.venv\Scripts\python.exe .\adapter.py
+```
+
+正常启动会看到 Listener、outbound sender 和 heartbeat 状态。
+
+## 4. 设置登录后自动启动
+
+手动运行确认正常后：
+
+```powershell
+.\install-autostart.ps1
+```
+
+计划任务名为 `Cove WeChat Adapter`。Supervisor 会等待 `Weixin.exe`、拉起 Adapter、异常退出后重启，并写入滚动日志。
+
+## 5. 日志
+
+Supervisor 日志：
 
 ```text
 logs/supervisor.log
 ```
 
-常见关键字：
+Adapter 常见关键字：
 
 ```text
 [listener] active
@@ -44,90 +82,105 @@ logs/supervisor.log
 [outbound:dedupe]
 [receipt:ack]
 [receipt:deferred]
+[heartbeat]
 ```
 
-## 微信发了文字，但 Agent 没收到
+## 6. 微信发了文字，但 Bridge 没收到
 
-按层排查：
+按顺序检查微信登录、Listener、目标会话 ID、Bridge HTTPS 与 Bearer token。
+
+如果已经出现：
 
 ```text
-微信 DB 是否读到
-↓
-Listener 是否触发
-↓
-POST /wechat/agent/events 是否成功
-↓
-Bridge 是否入队
-↓
-Agent 是否真正领取
+[inbound] ... created=True
 ```
 
-如果 Adapter 已经打印 `[inbound] ... created=True`，Windows 侧基本已经完成自己的工作。
+说明 Windows Adapter 已把消息交给 Bridge。后续没有 Work 回复时，应继续查看 VPS Bridge 与 MCP Events，而不是反复重启 Windows Adapter。
 
-## Agent 已回复，但微信没收到
+## 7. Bridge 收到了，但 ChatGPT Work 没回复
+
+优先检查：
+
+1. VPS `/health` 中 conversation queue 是否有 pending。
+2. MCP Events subscription 是否 active。
+3. VPS 日志中的 `subscriptions` 与 `accepted`。
+4. Work 是否调用 `cove_bridge_get_event`。
+5. Work 是否调用 `cove_bridge_reply`。
+
+详见 [Work MCP Events](WORK_MCP_EVENTS.md)。
+
+
+## 8. Work 已回复，但微信没收到
 
 检查：
 
 ```text
-Bridge 是否生成 command
-↓
-Adapter 是否从 /next 取到
-↓
-[outbound:sent] 是否出现
-↓
-[receipt:ack] 是否出现
+cove_bridge_reply
+    ↓
+Bridge 生成 command
+    ↓
+Adapter 从 /wechat/agent/next 领取
+    ↓
+[outbound:sent]
+    ↓
+[receipt:ack]
 ```
 
-`outbound:sent` 出现后，即使 ACK 暂时失败，Adapter 也会记住 command ID，避免重复发送同一条微信消息。
+如果没有 `[outbound]`，优先检查 Bridge command 队列和 Windows 到 VPS 的连接。
 
-## 看到多个 pythonw.exe
+如果出现 `[outbound]` 但发送失败，检查微信是否仍登录、微信 GUI 是否可操作，以及 Adapter 日志中的错误。
 
-使用 Python venv 时可能看到两层 Python 启动链：
+## 9. 为什么成功发送后还需要 ACK
+
+Adapter 只有在微信发送成功并通过本地 DB 确认后，才会把 command ID 写入：
 
 ```text
-supervisor launcher
-└─ supervisor python
-   └─ adapter launcher
-      └─ adapter python
+.local/delivered_commands.json
 ```
 
-这不等于运行了两套 Adapter。
+随后向 Bridge POST `/wechat/agent/result`。
 
-判断重复实例时，请看：
+如果微信已经发出，但网络在 ACK 阶段中断：
 
-- 父子进程树
-- Scheduled Task
-- named mutex
+- command ID 已经落盘
+- Adapter 不会重复发送同一条微信
+- receipt worker 会继续补 ACK
 
-## Bridge / Agent 回复很慢
+这用于避免“消息已经发出，但因为回执丢失又发送第二遍”。
 
-如果微信消息很快到达 Bridge，但回复延迟明显，问题可能在 Agent / 托管执行层。
+## 10. 看到多个 pythonw.exe
 
-例如：
+使用 venv 时，一个 Python 程序在 Windows 进程树里可能表现为启动器 + 实际解释器两层。
+
+正常结构类似：
 
 ```text
-Bridge 已通知上游
-→ webhook accepted
-→ 但模型 turn 没启动
+Scheduled Task
+└─ supervisor launcher
+   └─ supervisor Python
+      └─ adapter launcher
+         └─ adapter Python
 ```
 
-或者：
+所以看到多层 `pythonw.exe` 不等于运行了多套 Adapter。判断重复实例时，应同时看父子进程树、Scheduled Task、named mutex 和日志。
+
+## 11. 长轮询偶尔报网络错误
+
+Adapter 会持续长轮询：
 
 ```text
-Agent 已领取事件
-→ 但 turn 中途终止
-→ 没有生成最终 reply command
+GET /wechat/agent/next
 ```
 
-这类问题不是提高 Adapter 网络重试次数就一定能解决。
+网络、代理或反向代理连接复位可能产生临时错误。Adapter 会等待后继续拉取。
 
-Bridge 应保留原 pending event，并通过 watchdog 重试。
+单次连接错误本身不代表消息已经丢失。判断是否真正影响回复，应结合 Bridge queue、command 状态和后续 `[outbound:sent]`。
 
-## 文字版范围
+## 12. 文字版范围
 
-本公开版只处理微信 `文本` 类型。
+公开 v0 只处理微信文本类型。
 
-以下消息不在 v0 范围：
+以下消息会被忽略：
 
 - 图片
 - 动画表情
@@ -137,13 +190,12 @@ Bridge 应保留原 pending event，并通过 watchdog 重试。
 - 拍一拍
 - 朋友圈
 
-需要这些功能时，请参考上游微信自动化项目自行扩展。
+需要更多微信自动化能力时，可以参考上游 `wechatauto-replica` 自行扩展。
 
-## 安全建议
+## 13. 安全建议
 
-- 只允许白名单 conversationId
-- Adapter token 使用最小权限
-- 不提交真实 token / wxid
-- Bridge 使用 HTTPS
-- eventId / commandId 做幂等
-- 日志避免泄露凭据
+- 只允许单个白名单会话。
+- Windows Bearer token 使用高强度随机值。
+- Bridge 只通过 HTTPS 访问。
+- 不提交真实凭据、会话 ID 或聊天日志。
+- 不把非文字消息“降级猜测”为文字内容。

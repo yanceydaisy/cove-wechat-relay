@@ -1,59 +1,132 @@
-# VPS 与 Cove Bridge：部署结构和实现检查单
+# VPS Bridge 部署
 
-> **重要**：本文件描述我们的真实部署架构以及独立 Bridge 必须实现的功能；**当前公开工作区还没有可直接克隆部署的最小 Bridge 服务代码**。下面是环境与运行模板，不能代替 Bridge 实现。
-
-## 目标结构
+本仓库的 `bridge/` 是可独立运行的文字版 Cove Bridge。它负责连接 Windows Adapter 与 ChatGPT Work：
 
 ```text
-Windows WeChat Adapter
-       │ HTTPS + Agent Bearer token
-       ▼
-VPS public domain / TLS reverse proxy
-       ▼
-Cove Bridge (Node.js 22)
-       ├─ POST /wechat/agent/events
-       ├─ GET  /wechat/agent/next
-       ├─ POST /wechat/agent/result
-       ├─ POST /wechat/agent/heartbeat
-       │
-       ├─ conversation queue
-       ├─ WeChat burst + routing
-       ├─ webhook wake / retry watchdog
-       │
-       └─ MCP Events 2.0 endpoint (private, authenticated)
-           ├─ server/discover
-           ├─ events/list
-           ├─ events/subscribe
-           ├─ events/unsubscribe
-           ├─ tools/list
-           └─ tools/call
-               ├─ cove_bridge_get_event
-               └─ cove_bridge_reply
+Windows Adapter
+      │ HTTPS + Bearer token
+      ▼
+VPS Cove Bridge
+      ├─ /wechat/agent/events
+      ├─ /wechat/agent/next
+      ├─ /wechat/agent/result
+      ├─ /wechat/agent/heartbeat
+      │
+      ├─ burst buffer
+      ├─ conversation queue
+      ├─ MCP Events subscription store
+      ├─ webhook wake / watchdog
+      │
+      └─ /mcp/events/<private-token>
+          ├─ server/discover
+          ├─ events/list
+          ├─ events/subscribe
+          ├─ events/unsubscribe
+          ├─ tools/list
+          └─ tools/call
+              ├─ cove_bridge_get_event
+              └─ cove_bridge_reply
 ```
 
-我们的实际生产环境是 Linux VPS + Node.js 22 + systemd + 反向代理。开发源码是 TypeScript，先编译再用 Node 启动。当前源工程还包含 Cove Home、音乐、其他 MCP 模块，**它们都不属于微信文字开源最小链路**。
+## 1. 环境
 
-## 1. VPS 基础环境
+推荐：
 
-建议：
-
-- Ubuntu 24.04 LTS 或其他受支持的 Linux
+- Ubuntu 24.04 LTS 或其他仍受支持的 Linux
 - Node.js 22
 - 域名指向 VPS
-- HTTPS/TLS 终止与反向代理（可用 Caddy / Nginx）
-- 只开放必要的 22/80/443 端口；不直接把内部 Node 端口裸露公网
-- 单独的服务账户、严格的 secret 文件权限、日志与自动重启机制
+- Caddy / Nginx 提供 HTTPS
+- systemd 管理 Bridge 进程
 
-Node 版本确认：
+确认 Node：
 
 ```bash
 node --version
 npm --version
 ```
 
-## 2. 反向代理示意
+## 2. 安装
 
-用 Caddy 时，可考虑以下**示意配置**（请按你的真实域名、已有服务和安全策略调整）：
+```bash
+git clone https://github.com/yanceydaisy/cove-wechat-relay.git
+cd cove-wechat-relay/bridge
+
+npm ci
+npm run typecheck
+npm run build
+npm test
+```
+
+如果四项都通过，说明当前源码、类型与核心队列测试可以正常工作。
+
+## 3. 配置
+
+可以使用 systemd `EnvironmentFile`、容器环境变量或其他 secret 管理方式提供以下配置：
+
+```text
+PORT=8787
+HOST=127.0.0.1
+WECHAT_AGENT_TOKEN=<long-random-token>
+MCP_EVENTS_PATH_TOKEN=<long-url-safe-random-token>
+MCP_EVENTS_STORE_PATH=/var/lib/cove-wechat-relay/mcp-event-subscriptions.json
+```
+
+### `WECHAT_AGENT_TOKEN`
+
+Windows Adapter 访问四个 `/wechat/agent/*` HTTP 接口时使用的 Bearer token。
+
+Windows 侧的：
+
+```text
+COVE_WECHAT_AGENT_TOKEN
+```
+
+必须与它一致。
+
+### `MCP_EVENTS_PATH_TOKEN`
+
+组成 ChatGPT 插件连接的私有 MCP endpoint：
+
+```text
+https://bridge.example.com/mcp/events/<MCP_EVENTS_PATH_TOKEN>
+```
+
+它与 Windows Agent token 是两套独立凭据。
+
+### `MCP_EVENTS_STORE_PATH`
+
+MCP Events subscription 的持久化文件。建议放在服务用户可写、不会随发布目录清空的位置，并限制文件权限。
+
+## 4. 本地启动
+
+```bash
+npm start
+```
+
+默认监听：
+
+```text
+127.0.0.1:8787
+```
+
+健康检查：
+
+```bash
+curl http://127.0.0.1:8787/health
+```
+
+返回内容包含：
+
+- conversation queue 状态
+- Windows Adapter 在线状态
+- burst buffer 状态
+- wake watchdog 状态
+
+健康检查不返回 token、callback URL 或聊天正文。
+
+## 5. HTTPS 反向代理
+
+以 Caddy 为例：
 
 ```caddyfile
 bridge.example.com {
@@ -61,52 +134,27 @@ bridge.example.com {
 }
 ```
 
-仅用于说明拓扑。**不要在没有鉴权与安全检查时把内部管理接口、调试接口或 MCP 入口全部公开。**
+Bridge 默认绑定 `127.0.0.1`，因此公网只需要暴露反向代理的 443 端口。
 
-## 3. Bridge 需要的配置
+如果你的部署环境需要容器或跨主机访问，可以修改 `HOST`，同时配合防火墙限制来源。
 
-以下仅是示意名称，实际代码所使用的环境变量和密钥读取方式应与 Bridge 实现一致：
+## 6. systemd
 
-```text
-PORT=8787
-WECHAT_AGENT_TOKEN_PATH=/etc/cove-relay/wechat-agent.token
-EVENTS_TEST_TOKEN_PATH=/etc/cove-relay/mcp-events.token
-EVENTS_TEST_STORE_PATH=/var/lib/cove-relay/mcp-event-subscriptions.json
-```
-
-实际 Cove Bridge 的 MCP Events 路径按私有 token 派生：
-
-```text
-https://bridge.example.com/mcp/events-test/<secret-path-token>
-```
-
-这是连接 ChatGPT 的 MCP endpoint，**不是微信 Agent token，也不是 webhook callback URL**。生产使用时应额外考虑成熟的身份校验方案、密钥轮换和网络暴露范围；不要在 README、截图、日志中公开实际路径。
-
-## 4. 本地编译与 systemd
-
-如果你已拥有 **Bridge 代码**，实际工程使用：
-
-```bash
-npm ci
-npm run typecheck
-npm run build
-npm start
-```
-
-以下仅是 systemd 单元**模板**（假设实际启动命令就是 `node dist/src/server.js`，根据部署目录和服务用户调整）：
+示例：
 
 ```ini
 [Unit]
-Description=Cove WeChat Bridge
+Description=Cove WeChat Relay Bridge
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
 User=cove-relay
-WorkingDirectory=/opt/cove-relay
-EnvironmentFile=/etc/cove-relay/bridge.env
-ExecStart=/usr/bin/node /opt/cove-relay/dist/src/server.js
+Group=cove-relay
+WorkingDirectory=/opt/cove-wechat-relay/bridge
+EnvironmentFile=/etc/cove-wechat-relay/bridge.env
+ExecStart=/usr/bin/node /opt/cove-wechat-relay/bridge/dist/src/server.js
 Restart=always
 RestartSec=5
 
@@ -114,105 +162,136 @@ RestartSec=5
 WantedBy=multi-user.target
 ```
 
-以上模板不是当前生产 systemd unit 的逐字复制。生产环境可能通过包装脚本设置路径、环境变量和 Unix socket；不要照抄后假定无需修改。
-
-可用这些命令确认服务：
+安装并启动：
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable --now cove-relay
-systemctl status cove-relay
-journalctl -u cove-relay -n 100 --no-pager
+sudo systemctl enable --now cove-wechat-relay
+systemctl status cove-wechat-relay
+journalctl -u cove-wechat-relay -n 100 --no-pager
 ```
 
-**重要**：在真实 VPS 上对已有服务执行 restart 前，先检查 pending / reserved conversation 和未完成微信命令。当前 Bridge 队列的部分状态在内存里，贸然重启可能丢失未完成消息。
+更新代码时建议先查看 `/health`。当前 conversation queue 和未完成 command 仍含内存状态，因此有正在处理的消息时不要随意重启服务。
 
-## 5. Bridge 实现所需的四段逻辑
+## 7. Windows HTTP 接口
 
-### 微信入站 HTTP
+Bridge 实现：
 
-实现 [文字版协议](BRIDGE_PROTOCOL.md) 的四个 HTTP endpoints。对 `/events` 做 token 校验、参数校验、按 `eventId` 幂等，并产生 `wechat.dm` 对话事件。
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| `POST` | `/wechat/agent/events` | Adapter 上报文字消息 |
+| `GET` | `/wechat/agent/next` | Adapter 长轮询待发送回复 |
+| `POST` | `/wechat/agent/result` | Adapter 回报发送结果 |
+| `POST` | `/wechat/agent/heartbeat` | Adapter 在线心跳 |
 
-我们的运行版把短时间内的连续微信文字合并为一轮：安静窗口约 4 秒、最多等待 8 秒、每轮最多 10 条。聚合归 Bridge 管，Adapter 不负责。
+全部要求：
 
-### MCP Events 订阅
+```http
+Authorization: Bearer <WECHAT_AGENT_TOKEN>
+```
 
-MCP 2.0 endpoint 至少支持：
+字段详见 [Bridge Protocol](BRIDGE_PROTOCOL.md)。
+
+## 8. Burst 与 conversation queue
+
+同一微信会话的连续短消息会先进入 burst buffer：
+
+- 安静窗口：4 秒
+- 最长等待：8 秒
+- 单轮最多：10 条
+
+聚合完成后生成：
 
 ```text
-server/discover
-events/list
-events/subscribe
-events/unsubscribe
-tools/list
-tools/call
+wechat-burst:<24 hex chars>
 ```
 
-协议版本是 `2026-07-28`。
+并按 FIFO 进入 conversation queue。
 
-`events/list` 公布：
+一条需要回复的事件未完成时，后面的事件不会越过它直接进入 Work。
 
-```json
-{
-  "name": "cove.bridge.requested",
-  "inputSchema": {
-    "type": "object",
-    "properties": {
-      "source": { "type": "string", "enum": ["wechat.dm"] }
-    },
-    "required": ["source"]
-  }
-}
+## 9. MCP Events
+
+Bridge 使用 MCP 2.0 protocol version：
+
+```text
+2026-07-28
 ```
 
-上面是核心字段示意，不是完整 `events/list` 响应，真实实现还需符合 MCP Events schema。
+公开事件：
 
-当 ChatGPT 执行 `events/subscribe` 时，Bridge 需存储订阅参数、回调 URL、签名密钥与过期时间，并按规范校验并完成 callback challenge。不要自己预先编造 OpenAI callback URL。
-
-### 唤醒与读取
-
-为符合 `source=wechat.dm` 的订阅发送签名 webhook，示意：
-
-```json
-{
-  "eventId": "evt_bridge_<digest>_r0",
-  "name": "cove.bridge.requested",
-  "timestamp": "<ISO-8601>",
-  "data": {
-    "bridgeEventId": "wechat-burst:<digest>",
-    "source": "wechat.dm",
-    "stream": "conversation",
-    "replyPolicy": "required",
-    "createdAt": "<ISO-8601>"
-  },
-  "cursor": null
-}
+```text
+cove.bridge.requested
+arguments: {"source":"wechat.dm"}
 ```
 
-Bridge 要对用户消息保持单会话顺序。收到 Work 的 `cove_bridge_get_event` 时，按 `data.bridgeEventId` 找到原事件，返回 `visibleText`、`modelContext` 等内容。已完成返回 `completed=true`，排队受阻返回 `blockedBy`。
+公开工具：
 
-`accepted=1` **只代表 webhook 平台接收**。我们在 VPS 上用独立 watchdog 周期检查状态；未完成可重试唤醒。重新唤醒时外层 webhook ID 可以更新，但底层 `bridgeEventId` 保持稳定。
+```text
+cove_bridge_get_event
+cove_bridge_reply
+```
 
-### 回复与真实发送回执
+订阅过程由 ChatGPT 提供 webhook callback URL 和 `whsec_...` signing secret。Bridge 会：
 
-Work 调 `cove_bridge_reply`，Bridge 校验原事件、按 `messages[]` 构造文字 command，等待 Windows Adapter 通过 `GET /next` 拉取并在官方微信真正发出。
+1. 校验 event name 与 arguments。
+2. 校验 callback URL 必须为允许的 HTTPS 公网地址。
+3. 发送签名 challenge。
+4. 只有 challenge 正确回显后才激活订阅。
+5. 将 subscription 写入 `MCP_EVENTS_STORE_PATH`。
+6. 对 webhook 使用 Standard Webhooks 兼容签名。
 
-只有在 `POST /result` 收到成功 ACK 后才把本轮回复视为已交付。发送失败不应被误判成已经完成，重试必须保持稳定 command ID。
+callback URL 与 signing secret 不需要人工预设。
 
-## 6. 订阅持久化 ≠ 会话持久化
+## 10. Wake watchdog
 
-我们的真实实现将 MCP Events subscriptions 写入私有 JSON 文件，并对 secret 做访问限制；**但当前会话待办 queue、outbound pending / inflight 仍存在内存部分**。
+Webhook 返回 2xx 只表示通知被平台接收。
 
-生产可靠性最关键的待办是把待回复对话、command 及 ACK 状态落到持久化存储，恢复进程后能继续执行，而不是只靠重试 webhook。
+Bridge 会跟踪当前 `bridgeEventId`：
 
-## 7. 何时才能称为“可自建部署”
+- 第一次通知后约 40 秒可重试
+- 之后退避到 60 秒、120 秒、再到 5 分钟
+- Work 已调用 `get_event` 后给予生成回复的宽限时间
+- 一旦 `cove_bridge_reply` 进入发送流程，不再并行唤醒同一事件
 
-需要至少提供并验证：
+watchdog 的重新唤醒会使用新的通知 event ID，但底层 `bridgeEventId` 不变，因此回复幂等仍围绕同一条 conversation event。
 
-1. 可独立运行的文字版 Bridge 源码（不依赖 Home / Together / XHS 等私人模块）。
-2. `package.json`、锁文件、环境变量模板，以及启动文档。
-3. 完整 MCP Events 订阅、webhook 校验 / 签名、`get_event` / `reply` 实现。
-4. HTTPS 部署方式与无秘密的配置例子。
-5. 从 Windows 文字上报到 Work，再到微信回复的端到端验收。
+## 11. Reply command 与 ACK
 
-在这五项完成前，这个仓库应描述为 **“Windows Relay + 端到端集成说明”**，而不是“克隆即可跑通 ChatGPT 微信”。
+`cove_bridge_reply` 接收 1–5 条文字 bubble。
+
+Bridge 对每条 bubble 根据：
+
+```text
+bridgeEventId + index + text
+```
+
+生成稳定 command ID。
+
+Windows Adapter 从 `/wechat/agent/next` 领取 command，发送到真实微信后调用 `/wechat/agent/result`。
+
+Bridge 收到成功 ACK 后才认为对应 bubble 已送达。
+
+## 12. 当前持久化范围
+
+已经持久化：
+
+- MCP Events subscriptions
+- Windows Adapter 自己的已发送 command journal
+
+Bridge 进程内存中仍保存：
+
+- conversation queue
+- burst buffer
+- pending / inflight outbound commands
+
+所以 VPS 重启可能影响正在处理中的消息。需要跨重启恢复时，可以把这些状态迁移到 SQLite、Postgres 或其他持久化队列。
+
+## 13. 安全建议
+
+- Bridge 放在 HTTPS 后面。
+- Node 内部端口尽量只监听 `127.0.0.1`。
+- Windows Bearer token 与 MCP endpoint token 分开生成。
+- 不在仓库、日志或截图中公开真实凭据。
+- 保留 callback SSRF 防护，不要为了调试关闭公网地址校验。
+- 微信正文按不受信任的用户输入处理。
