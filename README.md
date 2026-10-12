@@ -1,5 +1,7 @@
 # Cove WeChat Relay
 
+**Built by Yancey & Cove**
+
 把 **Windows 官方微信 4.x** 的私聊文字消息接到 **ChatGPT 官端 / Work**，再把回复送回微信。
 
 本项目按实际验证的官端链路设计：
