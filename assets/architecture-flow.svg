@@ -1,0 +1,164 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="1500" viewBox="0 0 1120 1500" role="img" aria-labelledby="title desc">
+<title id="title">Cove WeChat Relay 端到端消息流</title>
+<desc id="desc">Windows 官方微信通过本地 Adapter、VPS Cove Bridge 和 MCP Events 唤醒 ChatGPT Work，再将回复送回微信。</desc>
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#f8fbff"/>
+    <stop offset="1" stop-color="#f7f8fc"/>
+  </linearGradient>
+  <linearGradient id="winHead" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="#e9f3ff"/>
+    <stop offset="1" stop-color="#ddecff"/>
+  </linearGradient>
+  <linearGradient id="vpsHead" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="#f0ecff"/>
+    <stop offset="1" stop-color="#e5e3ff"/>
+  </linearGradient>
+  <linearGradient id="aiHead" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="#e8fbf5"/>
+    <stop offset="1" stop-color="#ddf7ef"/>
+  </linearGradient>
+  <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+    <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#1f3b64" flood-opacity=".10"/>
+  </filter>
+  <style>
+    .sans { font-family: Inter, "Segoe UI", "Microsoft YaHei", "PingFang SC", Arial, sans-serif; fill:#16315a; }
+    .mono { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; fill:#17325b; }
+    .title { font-size:28px; font-weight:700; }
+    .body { font-size:23px; }
+    .small { font-size:21px; }
+    .connector { font-size:19px; font-weight:600; }
+    .muted { fill:#60708e; }
+  </style>
+</defs>
+
+<rect width="1120" height="1500" fill="url(#bg)"/>
+
+<!-- entry -->
+<g filter="url(#shadow)">
+  <rect x="32" y="84" rx="18" ry="18" width="285" height="74" fill="#f0fff7" stroke="#9ee8c4" stroke-width="2"/>
+</g>
+<g transform="translate(57 101)">
+  <circle cx="21" cy="20" r="17" fill="#20b15a"/>
+  <circle cx="40" cy="31" r="15" fill="#21c063"/>
+  <circle cx="16" cy="17" r="2.2" fill="#fff"/><circle cx="27" cy="17" r="2.2" fill="#fff"/>
+  <circle cx="36" cy="28" r="2" fill="#fff"/><circle cx="45" cy="28" r="2" fill="#fff"/>
+</g>
+<text x="111" y="130" class="sans body" font-weight="700">你在微信发送文字</text>
+<line x1="317" y1="121" x2="365" y2="121" stroke="#2d70d6" stroke-width="4"/>
+<polygon points="365,121 350,112 350,130" fill="#2d70d6"/>
+
+<!-- windows top -->
+<g filter="url(#shadow)">
+  <rect x="365" y="34" rx="22" ry="22" width="650" height="252" fill="#fff" stroke="#92c2ff" stroke-width="2"/>
+  <rect x="365" y="34" rx="22" ry="22" width="650" height="66" fill="url(#winHead)"/>
+  <rect x="365" y="78" width="650" height="22" fill="url(#winHead)"/>
+</g>
+<g transform="translate(397 56)" fill="#1677e8">
+  <rect x="0" y="0" width="17" height="17"/><rect x="21" y="0" width="17" height="17"/>
+  <rect x="0" y="21" width="17" height="17"/><rect x="21" y="21" width="17" height="17"/>
+</g>
+<text x="450" y="78" class="sans title">Windows 电脑</text>
+<text x="414" y="132" class="sans body">官方微信 4.x</text>
+<text x="432" y="170" class="sans body">↓ WeChatDB + Listener</text>
+<text x="414" y="208" class="sans body">Windows Adapter</text>
+<path d="M440 224 v24 h28" fill="none" stroke="#5f7394" stroke-width="2.5"/>
+<rect x="475" y="221" rx="10" ry="10" width="365" height="38" fill="#edf3fb"/>
+<text x="494" y="247" class="mono small">POST /wechat/agent/events</text>
+
+<!-- connector 1 -->
+<line x1="690" y1="286" x2="690" y2="340" stroke="#2d4f8e" stroke-width="3"/>
+<polygon points="690,350 681,334 699,334" fill="#2d4f8e"/>
+<rect x="548" y="303" rx="15" ry="15" width="284" height="42" fill="#eaf2ff"/>
+<text x="578" y="330" class="sans connector">HTTPS / Bearer token</text>
+
+<!-- VPS 1 -->
+<g filter="url(#shadow)">
+  <rect x="365" y="356" rx="22" ry="22" width="650" height="292" fill="#fff" stroke="#aaa0ff" stroke-width="2"/>
+  <rect x="365" y="356" rx="22" ry="22" width="650" height="66" fill="url(#vpsHead)"/>
+  <rect x="365" y="400" width="650" height="22" fill="url(#vpsHead)"/>
+</g>
+<g transform="translate(397 375)" fill="#6d55e7">
+  <rect x="0" y="0" rx="5" width="39" height="12"/><rect x="0" y="16" rx="5" width="39" height="12"/><rect x="0" y="32" rx="5" width="39" height="12"/>
+  <circle cx="29" cy="6" r="2.2" fill="#fff"/><circle cx="29" cy="22" r="2.2" fill="#fff"/><circle cx="29" cy="38" r="2.2" fill="#fff"/>
+</g>
+<text x="450" y="401" class="sans title">VPS</text>
+<text x="414" y="462" class="sans body" font-weight="700">Cove Bridge</text>
+<text x="438" y="503" class="sans body">├─ 接收、去重、整理事件</text>
+<text x="438" y="542" class="sans body">├─ 会话队列 / required reply</text>
+<text x="438" y="581" class="sans body">├─ MCP Events 订阅管理</text>
+<text x="438" y="620" class="sans body">└─ webhook wake + watchdog</text>
+
+<!-- connector 2 -->
+<line x1="690" y1="648" x2="690" y2="700" stroke="#2d4f8e" stroke-width="3"/>
+<polygon points="690,710 681,694 699,694" fill="#2d4f8e"/>
+<rect x="558" y="668" rx="15" ry="15" width="264" height="42" fill="#eceaff"/>
+<text x="584" y="696" class="sans connector">MCP Events webhook</text>
+
+<!-- ChatGPT -->
+<g filter="url(#shadow)">
+  <rect x="365" y="716" rx="22" ry="22" width="650" height="304" fill="#fff" stroke="#88d8c0" stroke-width="2"/>
+  <rect x="365" y="716" rx="22" ry="22" width="650" height="66" fill="url(#aiHead)"/>
+  <rect x="365" y="760" width="650" height="22" fill="url(#aiHead)"/>
+</g>
+<g transform="translate(397 735)">
+  <rect width="42" height="42" rx="10" fill="#10a57b"/>
+  <path d="M12 21c3-8 15-9 18-1 3 8-6 14-13 10-7-4-7-14 1-17 7-3 14 3 12 10" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round"/>
+</g>
+<text x="450" y="761" class="sans title">ChatGPT 官端</text>
+<text x="414" y="819" class="sans body" font-weight="600">Work 对话 / 已连接 MCP 插件</text>
+<text x="432" y="862" class="sans body">1. 收到</text>
+<rect x="535" y="836" rx="9" ry="9" width="300" height="36" fill="#eef3fb"/>
+<text x="549" y="861" class="mono small">cove.bridge.requested</text>
+<text x="432" y="905" class="sans body">2. 调</text>
+<rect x="505" y="879" rx="9" ry="9" width="332" height="36" fill="#eef3fb"/>
+<text x="519" y="904" class="mono small">cove_bridge_get_event</text>
+<text x="432" y="948" class="sans body">3. 生成回复</text>
+<text x="432" y="991" class="sans body">4. 调</text>
+<rect x="505" y="965" rx="9" ry="9" width="292" height="36" fill="#eef3fb"/>
+<text x="519" y="990" class="mono small">cove_bridge_reply</text>
+
+<!-- connector 3 -->
+<line x1="690" y1="1020" x2="690" y2="1072" stroke="#2d4f8e" stroke-width="3"/>
+<polygon points="690,1082 681,1066 699,1066" fill="#2d4f8e"/>
+<rect x="593" y="1040" rx="15" ry="15" width="194" height="42" fill="#eaf2ff"/>
+<text x="622" y="1068" class="sans connector">MCP tool call</text>
+
+<!-- VPS 2 -->
+<g filter="url(#shadow)">
+  <rect x="365" y="1088" rx="22" ry="22" width="650" height="180" fill="#fff" stroke="#aaa0ff" stroke-width="2"/>
+  <rect x="365" y="1088" rx="22" ry="22" width="650" height="62" fill="url(#vpsHead)"/>
+  <rect x="365" y="1128" width="650" height="22" fill="url(#vpsHead)"/>
+</g>
+<g transform="translate(397 1105)" fill="#6d55e7">
+  <rect x="0" y="0" rx="5" width="39" height="12"/><rect x="0" y="16" rx="5" width="39" height="12"/><rect x="0" y="32" rx="5" width="39" height="12"/>
+</g>
+<text x="450" y="1131" class="sans title">VPS</text>
+<text x="414" y="1190" class="sans body">Bridge 将回复变成待发送 command</text>
+<text x="414" y="1232" class="sans body">Adapter</text>
+<rect x="525" y="1205" rx="9" ry="9" width="316" height="36" fill="#eef3fb"/>
+<text x="542" y="1230" class="mono small">GET /wechat/agent/next</text>
+
+<!-- connector 4 -->
+<line x1="690" y1="1268" x2="690" y2="1317" stroke="#2d4f8e" stroke-width="3"/>
+<polygon points="690,1327 681,1311 699,1311" fill="#2d4f8e"/>
+<rect x="636" y="1285" rx="15" ry="15" width="108" height="42" fill="#eaf2ff"/>
+<text x="657" y="1313" class="sans connector">HTTPS</text>
+
+<!-- Windows bottom -->
+<g filter="url(#shadow)">
+  <rect x="365" y="1333" rx="22" ry="22" width="650" height="145" fill="#fff" stroke="#92c2ff" stroke-width="2"/>
+  <rect x="365" y="1333" rx="22" ry="22" width="650" height="58" fill="url(#winHead)"/>
+  <rect x="365" y="1371" width="650" height="20" fill="url(#winHead)"/>
+</g>
+<g transform="translate(397 1344)" fill="#1677e8">
+  <rect x="0" y="0" width="15" height="15"/><rect x="19" y="0" width="15" height="15"/>
+  <rect x="0" y="19" width="15" height="15"/><rect x="19" y="19" width="15" height="15"/>
+</g>
+<text x="450" y="1371" class="sans title">Windows</text>
+<text x="414" y="1415" class="sans small">Adapter → 官方微信 GUI 发送文字</text>
+<text x="414" y="1452" class="sans small">Adapter</text>
+<rect x="522" y="1427" rx="9" ry="9" width="347" height="34" fill="#eef3fb"/>
+<text x="537" y="1450" class="mono" font-size="19">POST /wechat/agent/result</text>
+<text x="885" y="1452" class="sans small">→ ACK</text>
+</svg>
