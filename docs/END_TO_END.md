@@ -100,7 +100,7 @@ MCP webhook 本身还有独立 `eventId`，用于 webhook 的幂等投递；**�
 
 **1. webhook accepted 只是平台接收成功。** MCP Events 回调 2xx 并不保证 Work run 已启动或已回复。Bridge 应保留同一个 `bridgeEventId`，为 watchdog 重试生成新的 webhook delivery ID。
 
-**2. 不要把现有 Bridge 说成“全持久化零丢失”。** 我们目前真实运行的 conversation queue 和出站 command 状态有内存部分；生产 VPS 重启时，未完成事件有丢失风险。公开教程必须明确这点，推荐先实现持久化队列再对外承诺更强可靠性。
+**2. VPS 重启可能影响尚未处理完成的消息。** 当前 Bridge 的部分运行状态保存在内存中。如果 VPS 在消息尚未完成处理或回复发送前重启，这些未完成状态可能不会自动恢复。 如果你希望把它用于长期运行，建议为待处理事件和发送队列增加持久化存储，并在服务启动后恢复未完成任务。
 
 ## 安全和发布边界
 
