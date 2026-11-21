@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 260" fill="none">
+<defs><linearGradient id="brass" x1="12" y1="0" x2="63" y2="4" gradientUnits="userSpaceOnUse"><stop stop-color="#534733"/><stop offset=".24" stop-color="#b39b60"/><stop offset=".43" stop-color="#e0ca89"/><stop offset=".55" stop-color="#907642"/><stop offset=".83" stop-color="#b69c60"/><stop offset="1" stop-color="#554735"/></linearGradient><linearGradient id="edge"><stop stop-color="#f1dfaa"/><stop offset="1" stop-color="#6d5836"/></linearGradient></defs>
+<!-- A pierced, engraved brass page marker; the openings are real negative space. -->
+<path fill="url(#brass)" stroke="#635034" stroke-width="1.1" fill-rule="evenodd" d="M40 3C22 3 10 18 13 34L18 49V205L40 244L62 205V49L67 34C70 18 58 3 40 3ZM40 10C27 10 19 20 21 31C23 43 32 48 40 51C48 48 57 43 59 31C61 20 53 10 40 10ZM25 59V194L40 224L55 194V59L40 65ZM29 70L40 75L51 70V191L40 213L29 191Z"/>
+<g stroke="url(#edge)" stroke-width="1.2"><path d="M19 49L23 202L40 234L57 202L61 49M17 28C17 12 37 2 51 11M24 56L40 61L56 56"/><path d="M40 75V212M40 96C17 77 27 64 39 83C52 64 63 77 40 96ZM40 130C16 109 29 100 40 117C51 100 64 109 40 130ZM40 166C16 145 29 136 40 153C51 136 64 145 40 166ZM40 199C22 183 31 174 40 185C49 174 58 183 40 199Z"/></g>
+<g stroke="#60533b" stroke-width=".6" opacity=".65"><path d="M23 100L24 119M58 80L57 96M20 158L22 180M51 213L47 220M26 24L29 20M52 38L49 40M53 185L51 192M29 139L31 133"/><path d="M19 60L22 62M55 58L58 57M22 197L27 199M49 205L53 204"/></g>
+<path stroke="#736448" stroke-width="1.3" d="M40 6C41 1 35 0 33 4C30 12 37 15 42 11"/>
+<g stroke="#9d8655" stroke-width="1.5"><path d="M37 243C29 246 32 250 38 251C43 252 43 256 37 258M43 244C51 246 49 252 44 251C38 250 38 256 43 258"/></g>
+</svg>
+
