@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="zh-CN" data-route="official">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#e8ece9">
+    <meta name="description" content="WeChat Resonance：把 Windows 官方微信接入 ChatGPT Work 或 Codex 运行环境的双路线工程手记。">
+
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="WeChat Resonance">
+    <meta property="og:description" content="One transport. Two AI runtimes. 一条微信消息，两种 AI 运行路径。">
+    <meta property="og:url" content="https://wechat-resonance.pages.dev/">
+    <meta property="og:image" content="https://wechat-resonance.pages.dev/og-card.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="WeChat Resonance">
+    <meta name="twitter:description" content="One transport. Two AI runtimes.">
+    <meta name="twitter:image" content="https://wechat-resonance.pages.dev/og-card.png">
+
+    <link rel="canonical" href="https://wechat-resonance.pages.dev/">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css">
+    <title>WeChat Resonance — 微信双路消息链</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#content">跳到正文</a>
+
+    <header class="topbar">
+      <a class="wordmark" href="#top" aria-label="WeChat Resonance 首页">
+        <span class="wordmark__glyph" aria-hidden="true"><i></i><i></i></span>
+        <span>WeChat Resonance</span>
+      </a>
+      <nav aria-label="页面导航">
+        <a href="#routes">双路架构</a>
+        <a href="#evidence">验证范围</a>
+        <a href="#boundary">公开边界</a>
+      </nav>
+      <a class="repo-link" href="https://github.com/yanceydaisy/cove-wechat-relay" target="_blank" rel="noreferrer">官端源码</a>
+    </header>
+
+    <main id="content">
+      <section class="hero" id="top" aria-labelledby="hero-title">
+        <div class="hero__copy">
+          <p class="status-line"><span class="status-dot" aria-hidden="true"></span>Windows WeChat 4.x · field notes</p>
+          <h1 id="hero-title"><span>WeChat</span><span>Resonance</span></h1>
+          <p class="hero__lede">一条微信消息，两种 AI 运行路径。</p>
+          <p class="hero__body">同一套本地收发、鉴权、排队与回执协议，可以接入 ChatGPT Work，也可以进入 Codex 侧的自用运行环境。这不是另一份聊天客户端，而是一条可被检查、重试和迁移的消息链。</p>
+        </div>
+
+        <div class="signal-desk" aria-label="交互式双路线示意图">
+          <div class="route-selector" role="group" aria-label="选择查看的路线">
+            <button class="route-button is-active" type="button" data-route-button="official" aria-pressed="true">
+              <span>Official route</span>
+              <small>ChatGPT Work / MCP Events</small>
+            </button>
+            <button class="route-button" type="button" data-route-button="codex" aria-pressed="false">
+              <span>Codex route</span>
+              <small>Private working system</small>
+            </button>
+          </div>
+
+          <div class="schematic">
+            <svg class="route-map" viewBox="0 0 920 300" role="img" aria-labelledby="map-title map-desc">
+              <title id="map-title">微信消息双路线结构</title>
+              <desc id="map-desc">微信消息先经过 Windows Adapter 与 Bridge，再按选择进入 ChatGPT Work 官端路线或 Codex 自用路线，回复沿同一桥接协议返回微信。</desc>
+              <defs>
+                <filter id="packet-glow" x="-300%" y="-300%" width="700%" height="700%">
+                  <feGaussianBlur stdDeviation="5" result="blur"></feGaussianBlur>
+                  <feMerge><feMergeNode in="blur"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge>
+                </filter>
+              </defs>
+
+              <path class="trace trace--base" d="M92 150H424"></path>
+              <path class="trace trace--official" d="M424 150C510 150 516 76 610 76H742C812 76 814 150 868 150"></path>
+              <path class="trace trace--codex" d="M424 150C510 150 516 224 610 224H742C812 224 814 150 868 150"></path>
+              <path id="motion-official" class="motion-path" d="M92 150H424C510 150 516 76 610 76H742C812 76 814 150 868 150"></path>
+              <path id="motion-codex" class="motion-path" d="M92 150H424C510 150 516 224 610 224H742C812 224 814 150 868 150"></path>
+
+              <g class="node node--wechat" transform="translate(92 150)">
+                <circle r="31"></circle><text y="5">微信</text>
+              </g>
+              <g class="node" transform="translate(258 150)">
+                <circle r="31"></circle><text y="5">本地</text><text class="node-note" y="50">Adapter</text>
+              </g>
+              <g class="node" transform="translate(424 150)">
+                <circle r="31"></circle><text y="5">桥</text><text class="node-note" y="50">Queue · ACK</text>
+              </g>
+              <g class="node node--official" transform="translate(662 76)">
+                <circle r="31"></circle><text y="5">Work</text><text class="node-note" y="50">MCP Events</text>
+              </g>
+              <g class="node node--codex" transform="translate(662 224)">
+                <circle r="31"></circle><text y="5">Codex</text><text class="node-note" y="50">Private route</text>
+              </g>
+              <g class="node node--reply" transform="translate(868 150)">
+                <circle r="31"></circle><text y="5">回复</text>
+              </g>
+
+              <circle id="signal-packet" r="7" filter="url(#packet-glow)">
+                <animateMotion id="packet-official" dur="1.55s" begin="indefinite" fill="freeze"><mpath href="#motion-official"></mpath></animateMotion>
+                <animateMotion id="packet-codex" dur="1.55s" begin="indefinite" fill="freeze"><mpath href="#motion-codex"></mpath></animateMotion>
+              </circle>
+            </svg>
+          </div>
+
+          <dl class="route-readout" aria-live="polite">
+            <div><dt>Wake</dt><dd data-route-copy="wake">MCP Events subscription</dd></div>
+            <div><dt>Model host</dt><dd data-route-copy="host">ChatGPT Work</dd></div>
+            <div><dt>Source</dt><dd data-route-copy="source">Open source</dd></div>
+          </dl>
+        </div>
+
+        <a class="scroll-cue" href="#routes"><span>Follow the signal</span><i aria-hidden="true"></i></a>
+      </section>
+
+      <section class="section routes" id="routes" aria-labelledby="routes-title">
+        <div class="section-heading">
+          <p>同一套传输骨架</p>
+          <h2 id="routes-title">分岔发生在模型入口，<br>不是微信这一端。</h2>
+        </div>
+
+        <div class="route-plates">
+          <article class="route-plate route-plate--official">
+            <header>
+              <span class="route-index">A</span>
+              <div><h3>官端路线</h3><p>可复现、可部署、已经开源</p></div>
+            </header>
+            <ol>
+              <li><span>01</span>Windows Adapter 读取指定私聊的文字消息</li>
+              <li><span>02</span>VPS Bridge 合并短消息并触发 MCP Events</li>
+              <li><span>03</span>ChatGPT Work 读取事件并生成回复</li>
+              <li><span>04</span>回复经长轮询、发送确认与 ACK 回到微信</li>
+            </ol>
+            <a href="https://github.com/yanceydaisy/cove-wechat-relay" target="_blank" rel="noreferrer">查看公开实现</a>
+          </article>
+
+          <article class="route-plate route-plate--codex">
+            <header>
+              <span class="route-index">B</span>
+              <div><h3>Codex 路线</h3><p>日常自用、能力扩展、源码私有</p></div>
+            </header>
+            <ol>
+              <li><span>01</span>沿用同一 Windows 适配层和鉴权入口</li>
+              <li><span>02</span>持久化入站消息，网络恢复后继续投递</li>
+              <li><span>03</span>进入 Codex 侧会话与工具运行环境</li>
+              <li><span>04</span>文本、媒体与桌面自动化按能力逐项扩展</li>
+            </ol>
+            <p class="private-note"><span aria-hidden="true">●</span> 分享结构与经验，不公开个人登录态、消息数据或私有配置。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section protocol" aria-labelledby="protocol-title">
+        <div class="section-heading section-heading--compact">
+          <p>协议，而非提示词魔法</p>
+          <h2 id="protocol-title">每一轮消息都有可观察的生命周期。</h2>
+        </div>
+
+        <div class="lifecycle" role="list" aria-label="消息生命周期">
+          <article role="listitem">
+            <span class="lifecycle__mark">Capture</span>
+            <h3>捕获</h3>
+            <p>只监听白名单会话；为消息生成稳定事件 ID。</p>
+          </article>
+          <article role="listitem">
+            <span class="lifecycle__mark">Queue</span>
+            <h3>排队</h3>
+            <p>短消息合并成一轮；重复事件不会再次创建。</p>
+          </article>
+          <article role="listitem">
+            <span class="lifecycle__mark">Wake</span>
+            <h3>唤醒</h3>
+            <p>官端订阅 MCP Events；自用路线替换模型入口。</p>
+          </article>
+          <article role="listitem">
+            <span class="lifecycle__mark">Acknowledge</span>
+            <h3>确认</h3>
+            <p>真实发送后回 ACK；命令 ID 防止同一气泡发送两次。</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section evidence" id="evidence" aria-labelledby="evidence-title">
+        <div class="section-heading">
+          <p>Evidence ledger</p>
+          <h2 id="evidence-title">只把真实验证过的，写成“可用”。</h2>
+        </div>
+
+        <div class="evidence-table" role="table" aria-label="两种路线的验证范围">
+          <div class="evidence-row evidence-row--head" role="row">
+            <span role="columnheader">能力</span><span role="columnheader">官端开源版</span><span role="columnheader">Codex 自用版</span>
+          </div>
+          <div class="evidence-row" role="row">
+            <span role="cell">私聊文字闭环</span><span role="cell" class="state state--verified">已验证</span><span role="cell" class="state state--verified">日常运行</span>
+          </div>
+          <div class="evidence-row" role="row">
+            <span role="cell">去重、长轮询与发送 ACK</span><span role="cell" class="state state--verified">已实现</span><span role="cell" class="state state--verified">已扩展</span>
+          </div>
+          <div class="evidence-row" role="row">
+            <span role="cell">图片入站</span><span role="cell" class="state state--out">边界之外</span><span role="cell" class="state state--lab">实验链路</span>
+          </div>
+          <div class="evidence-row" role="row">
+            <span role="cell">原生动态表情出站</span><span role="cell" class="state state--out">边界之外</span><span role="cell" class="state state--lab">传输修复待真机复验</span>
+          </div>
+          <div class="evidence-row" role="row">
+            <span role="cell">朋友圈读取、点赞与评论</span><span role="cell" class="state state--out">边界之外</span><span role="cell" class="state state--lab">内部扩展</span>
+          </div>
+        </div>
+        <p class="evidence-footnote">公开版故意保持最小：文字聊天接力是稳定基线。私有路线中的媒体和朋友圈能力处在不同验证阶段，不以演示替代端到端证据。</p>
+      </section>
+
+      <section class="section boundary" id="boundary" aria-labelledby="boundary-title">
+        <div class="boundary__statement">
+          <p>公开边界</p>
+          <h2 id="boundary-title">分享连接方法，<br>不分享连接中的人。</h2>
+        </div>
+        <div class="boundary__rules">
+          <p>公开：消息协议、可靠性设计、部署步骤、官端最小实现。</p>
+          <p>保留：Codex 私有源码、登录态、token、wxid、真实消息与个人数据。</p>
+          <p>上游：Windows 微信读写由 <a href="https://github.com/fanyuantaier/wechatauto-replica" target="_blank" rel="noreferrer">wechatauto-replica</a> 提供。</p>
+        </div>
+      </section>
+
+      <section class="closing" aria-labelledby="closing-title">
+        <div class="closing__signal" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+        <p>WeChat Resonance</p>
+        <h2 id="closing-title">Two routes.<br>One conversation.</h2>
+        <a href="https://github.com/yanceydaisy/cove-wechat-relay" target="_blank" rel="noreferrer">Read the official route on GitHub</a>
+      </section>
+    </main>
+
+    <footer>
+      <span>Built from field-tested message paths.</span>
+      <span>Yancey · 2026</span>
+    </footer>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>
