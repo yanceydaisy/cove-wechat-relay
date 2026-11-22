@@ -2,7 +2,7 @@
 
 > **范围：文字流 v0。** 本仓库同时包含 Windows Adapter 与 VPS Bridge，默认链路为：
 >
-> **Windows 官方微信 → Windows Adapter → VPS Bridge → MCP Events → ChatGPT Work → Cove Bridge → Windows 微信**
+> **Windows 官方微信 → Windows Adapter → VPS Bridge → MCP Events → ChatGPT Work → Bridge → Windows 微信**
 
 ## 整体架构
 
@@ -55,9 +55,9 @@ npm start
 Windows 登录官方微信 4.x，并配置：
 
 ```text
-COVE_WECHAT_BRIDGE_URL=https://bridge.example.com
-COVE_WECHAT_AGENT_TOKEN=<same token as VPS>
-COVE_WECHAT_TARGET=<whitelisted conversation id>
+WECHAT_BRIDGE_URL=https://bridge.example.com
+WECHAT_AGENT_TOKEN=<same token as VPS>
+WECHAT_TARGET=<whitelisted conversation id>
 ```
 
 安装 Python 依赖并先手动运行 `adapter.py`。确认 Listener、outbound sender 和 heartbeat 正常后，再安装计划任务。详见 [Windows 部署与排错](DEPLOY.md)。
@@ -74,17 +74,17 @@ https://bridge.example.com/mcp/events/<MCP_EVENTS_PATH_TOKEN>
 
 ```text
 event:
-  cove.bridge.requested
+  wechat.bridge.requested
 
 tools:
-  cove_bridge_get_event
-  cove_bridge_reply
+  wechat_bridge_get_event
+  wechat_bridge_reply
 ```
 
 然后在 Work 对话中订阅：
 
 ```text
-cove.bridge.requested
+wechat.bridge.requested
 {"source":"wechat.dm"}
 ```
 
@@ -105,9 +105,9 @@ conversation queue
     ↓
 MCP Event wake ... accepted=1
     ↓
-Work cove_bridge_get_event
+Work wechat_bridge_get_event
     ↓
-Work cove_bridge_reply
+Work wechat_bridge_reply
     ↓
 Windows [outbound:sent]
     ↓
@@ -122,10 +122,10 @@ Bridge receives /wechat/agent/result
 2. Adapter 生成确定性的 `eventId`，将 `conversationId` 与 `text` 用 Bearer token POST 到 Bridge。
 3. Bridge 在同一会话内使用短暂安静窗口合并连续消息。默认安静窗口 4 秒、最长等待 8 秒、每轮最多 10 条。
 4. burst 被转换成一条 `wechat.dm` conversation event，并进入 FIFO 队列。
-5. Bridge 为当前队首事件发送 `cove.bridge.requested` MCP Event。
-6. Work 使用 webhook 中的 `data.bridgeEventId` 调 `cove_bridge_get_event`。
-7. `cove_bridge_get_event` 返回 `visibleText` 和 `modelContext`。微信正文被视为用户输入，而不是系统级指令。
-8. Work 生成回复并调用 `cove_bridge_reply`，将完整回复放入 `messages[]`。
+5. Bridge 为当前队首事件发送 `wechat.bridge.requested` MCP Event。
+6. Work 使用 webhook 中的 `data.bridgeEventId` 调 `wechat_bridge_get_event`。
+7. `wechat_bridge_get_event` 返回 `visibleText` 和 `modelContext`。微信正文被视为用户输入，而不是系统级指令。
+8. Work 生成回复并调用 `wechat_bridge_reply`，将完整回复放入 `messages[]`。
 9. Bridge 为每条回复 bubble 生成稳定的 command ID，并等待 Windows Adapter 长轮询领取。
 10. Windows Adapter 调用官方微信 GUI 发送文字，并通过本地微信 DB 确认发送结果。
 11. Adapter POST `/wechat/agent/result` 返回成功 ACK。
@@ -151,7 +151,7 @@ wechat:<target>:<create_time>:<local_id>
 wechat-burst:<digest>
 ```
 
-这是 Work 真正读取和回复的对话事件 ID。`cove_bridge_get_event` 与 `cove_bridge_reply` 都围绕它工作。
+这是 Work 真正读取和回复的对话事件 ID。`wechat_bridge_get_event` 与 `wechat_bridge_reply` 都围绕它工作。
 
 ### MCP webhook eventId
 
@@ -159,7 +159,7 @@ wechat-burst:<digest>
 
 因此：
 
-> 传给 `cove_bridge_get_event` 的是 `data.bridgeEventId`，不是外层 webhook 的 `eventId`。
+> 传给 `wechat_bridge_get_event` 的是 `data.bridgeEventId`，不是外层 webhook 的 `eventId`。
 
 ## 状态与排错
 

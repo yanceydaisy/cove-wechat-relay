@@ -120,6 +120,32 @@ test("standalone bridge serves Windows and MCP surfaces", async () => {
     };
     assert.ok(rpc.result?.capabilities?.events);
     assert.ok(rpc.result?.capabilities?.tools);
+
+    // Exercise the public discovery surfaces, so a namespace rename cannot
+    // advertise one identifier while handlers/subscriptions use another.
+    async function listSurface(method: string) {
+      const response = await fetch(`${base}/mcp/events/${eventsToken}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Mcp-Protocol-Version": "2026-07-28",
+          "Mcp-Method": method,
+        },
+        body: JSON.stringify({ ...discoverBody, id: 2, method }),
+      });
+      assert.equal(response.status, 200);
+      return await response.json() as {
+        result?: { tools?: Array<{ name: string }>; events?: Array<{ name: string }> };
+      };
+    }
+    const advertisedTools = await listSurface("tools/list");
+    assert.deepEqual(advertisedTools.result?.tools?.map((tool) => tool.name), [
+      "wechat_bridge_get_event", "wechat_bridge_reply",
+    ]);
+    const advertisedEvents = await listSurface("events/list");
+    assert.deepEqual(advertisedEvents.result?.events?.map((event) => event.name), [
+      "wechat.bridge.requested",
+    ]);
   } finally {
     child.kill();
   }

@@ -8,7 +8,7 @@ import { EventsStore } from "../src/events/store.js";
 import type { BridgeEvent } from "../src/types.js";
 
 test("subscription verification and bridge wake delivery", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "cove-events-"));
+  const dir = await mkdtemp(join(tmpdir(), "wechat-events-"));
   try {
     const store = new EventsStore(join(dir, "subscriptions.json"));
     await store.load();
@@ -33,7 +33,7 @@ test("subscription verification and bridge wake delivery", async () => {
     const secret = "whsec_" + Buffer.alloc(32, 7).toString("base64");
 
     const subscription = await service.subscribe("owner", {
-      name: "cove.bridge.requested",
+      name: "wechat.bridge.requested",
       arguments: { source: "wechat.dm" },
       delivery: {
         mode: "webhook",

@@ -3,7 +3,7 @@ $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Pythonw = Join-Path $Root ".venv\Scripts\pythonw.exe"
 $Supervisor = Join-Path $Root "supervisor.py"
-$TaskName = "Cove WeChat Adapter"
+$TaskName = "WeChat Resonance Adapter"
 
 if (-not (Test-Path $Pythonw)) { throw "pythonw.exe not found in .venv" }
 if (-not (Test-Path $Supervisor)) { throw "supervisor.py not found" }

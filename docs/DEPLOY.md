@@ -7,7 +7,7 @@
 ```text
 Windows PC
 ├─ 官方微信 4.x
-└─ Cove WeChat Adapter
+└─ WeChat Resonance Adapter
        │ HTTPS
        ▼
 VPS Bridge
@@ -32,14 +32,14 @@ py -3.12 -m venv .venv
 设置三个 Windows 用户环境变量：
 
 ```text
-COVE_WECHAT_BRIDGE_URL=https://bridge.example.com
-COVE_WECHAT_AGENT_TOKEN=<same token as VPS>
-COVE_WECHAT_TARGET=<target conversation id>
+WECHAT_BRIDGE_URL=https://bridge.example.com
+WECHAT_AGENT_TOKEN=<same token as VPS>
+WECHAT_TARGET=<target conversation id>
 ```
 
-- `COVE_WECHAT_BRIDGE_URL`：VPS Bridge 的 HTTPS 根地址
-- `COVE_WECHAT_AGENT_TOKEN`：Windows Adapter 专用 Bearer token
-- `COVE_WECHAT_TARGET`：允许监听与回复的单个微信会话 ID
+- `WECHAT_BRIDGE_URL`：VPS Bridge 的 HTTPS 根地址
+- `WECHAT_AGENT_TOKEN`：Windows Adapter 专用 Bearer token
+- `WECHAT_TARGET`：允许监听与回复的单个微信会话 ID
 
 不要把真实凭据或会话 ID 写进仓库。
 
@@ -61,7 +61,7 @@ COVE_WECHAT_TARGET=<target conversation id>
 .\install-autostart.ps1
 ```
 
-计划任务名为 `Cove WeChat Adapter`。Supervisor 会等待 `Weixin.exe`、拉起 Adapter、异常退出后重启，并写入滚动日志。
+计划任务名为 `WeChat Resonance Adapter`。Supervisor 会等待 `Weixin.exe`、拉起 Adapter、异常退出后重启，并写入滚动日志。
 
 ## 5. 日志
 
@@ -104,8 +104,8 @@ Adapter 常见关键字：
 1. VPS `/health` 中 conversation queue 是否有 pending。
 2. MCP Events subscription 是否 active。
 3. VPS 日志中的 `subscriptions` 与 `accepted`。
-4. Work 是否调用 `cove_bridge_get_event`。
-5. Work 是否调用 `cove_bridge_reply`。
+4. Work 是否调用 `wechat_bridge_get_event`。
+5. Work 是否调用 `wechat_bridge_reply`。
 
 详见 [Work MCP Events](WORK_MCP_EVENTS.md)。
 
@@ -115,7 +115,7 @@ Adapter 常见关键字：
 检查：
 
 ```text
-cove_bridge_reply
+wechat_bridge_reply
     ↓
 Bridge 生成 command
     ↓

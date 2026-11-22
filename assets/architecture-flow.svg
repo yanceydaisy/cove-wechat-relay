@@ -109,14 +109,14 @@
 <text x="414" y="819" class="sans body" font-weight="600">Work 对话 / 已连接 MCP 插件</text>
 <text x="432" y="862" class="sans body">1. 收到</text>
 <rect x="535" y="836" rx="9" ry="9" width="300" height="36" fill="#eef3fb"/>
-<text x="549" y="861" class="mono small">cove.bridge.requested</text>
+<text x="549" y="861" class="mono small">wechat.bridge.requested</text>
 <text x="432" y="905" class="sans body">2. 调</text>
 <rect x="505" y="879" rx="9" ry="9" width="332" height="36" fill="#eef3fb"/>
-<text x="519" y="904" class="mono small">cove_bridge_get_event</text>
+<text x="519" y="904" class="mono small">wechat_bridge_get_event</text>
 <text x="432" y="948" class="sans body">3. 生成回复</text>
 <text x="432" y="991" class="sans body">4. 调</text>
 <rect x="505" y="965" rx="9" ry="9" width="292" height="36" fill="#eef3fb"/>
-<text x="519" y="990" class="mono small">cove_bridge_reply</text>
+<text x="519" y="990" class="mono small">wechat_bridge_reply</text>
 
 <!-- connector 3 -->
 <line x1="690" y1="1020" x2="690" y2="1072" stroke="#2d4f8e" stroke-width="3"/>

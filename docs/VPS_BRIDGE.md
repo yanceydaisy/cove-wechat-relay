@@ -24,8 +24,8 @@ VPS Bridge
           ├─ events/unsubscribe
           ├─ tools/list
           └─ tools/call
-              ├─ cove_bridge_get_event
-              └─ cove_bridge_reply
+              ├─ wechat_bridge_get_event
+              └─ wechat_bridge_reply
 ```
 
 ## 1. 环境
@@ -78,7 +78,7 @@ Windows Adapter 访问四个 `/wechat/agent/*` HTTP 接口时使用的 Bearer to
 Windows 侧的：
 
 ```text
-COVE_WECHAT_AGENT_TOKEN
+WECHAT_AGENT_TOKEN
 ```
 
 必须与它一致。
@@ -221,15 +221,15 @@ Bridge 使用 MCP 2.0 protocol version：
 公开事件：
 
 ```text
-cove.bridge.requested
+wechat.bridge.requested
 arguments: {"source":"wechat.dm"}
 ```
 
 公开工具：
 
 ```text
-cove_bridge_get_event
-cove_bridge_reply
+wechat_bridge_get_event
+wechat_bridge_reply
 ```
 
 订阅过程由 ChatGPT 提供 webhook callback URL 和 `whsec_...` signing secret。Bridge 会：
@@ -252,13 +252,13 @@ Bridge 会跟踪当前 `bridgeEventId`：
 - 第一次通知后约 40 秒可重试
 - 之后退避到 60 秒、120 秒、再到 5 分钟
 - Work 已调用 `get_event` 后给予生成回复的宽限时间
-- 一旦 `cove_bridge_reply` 进入发送流程，不再并行唤醒同一事件
+- 一旦 `wechat_bridge_reply` 进入发送流程，不再并行唤醒同一事件
 
 watchdog 的重新唤醒会使用新的通知 event ID，但底层 `bridgeEventId` 不变，因此回复幂等仍围绕同一条 conversation event。
 
 ## 11. Reply command 与 ACK
 
-`cove_bridge_reply` 接收 1–5 条文字 bubble。
+`wechat_bridge_reply` 接收 1–5 条文字 bubble。
 
 Bridge 对每条 bubble 根据：
 

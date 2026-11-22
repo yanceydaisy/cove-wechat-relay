@@ -6,9 +6,9 @@ from datetime import datetime
 from wechatauto import WeChatDB
 from wechatauto.db import Listener
 
-TARGET = os.environ.get("COVE_WECHAT_TARGET", "").strip()
+TARGET = os.environ.get("WECHAT_TARGET", "").strip()
 if not TARGET:
-    raise RuntimeError("COVE_WECHAT_TARGET is not configured")
+    raise RuntimeError("WECHAT_TARGET is not configured")
 
 db = WeChatDB()
 me = db.get_self_info()

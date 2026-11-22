@@ -4,7 +4,7 @@ import { dirname } from "node:path";
 export type Subscription = {
   id: string;
   owner: string;
-  name: "cove.bridge.requested";
+  name: "wechat.bridge.requested";
   arguments: { source: "wechat.dm" };
   url: string;
   secret: string;
@@ -24,7 +24,7 @@ export class EventsStore {
       const values = JSON.parse(await readFile(this.file, "utf8")) as Subscription[];
       const now = new Date().toISOString();
       for (const value of values) {
-        if (value.name === "cove.bridge.requested" && value.refreshBefore > now) {
+        if (value.name === "wechat.bridge.requested" && value.refreshBefore > now) {
           this.subscriptions.set(value.id, value);
         }
       }

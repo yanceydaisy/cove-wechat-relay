@@ -14,19 +14,19 @@ ROOT = Path(__file__).resolve().parent
 ADAPTER = ROOT / "adapter.py"
 LOG_DIR = ROOT / "logs"
 LOG_PATH = LOG_DIR / "supervisor.log"
-MUTEX_NAME = r"Local\CoveWeChatAdapterSupervisor"
+MUTEX_NAME = r"Local\WechatResonanceAdapterSupervisor"
 RESTART_DELAY_SECONDS = 5
 WECHAT_WAIT_SECONDS = 5
 REQUIRED_ENV = (
-    "COVE_WECHAT_BRIDGE_URL",
-    "COVE_WECHAT_AGENT_TOKEN",
-    "COVE_WECHAT_TARGET",
+    "WECHAT_BRIDGE_URL",
+    "WECHAT_AGENT_TOKEN",
+    "WECHAT_TARGET",
 )
 
 
 def configure_logging() -> logging.Logger:
     LOG_DIR.mkdir(parents=True, exist_ok=True)
-    logger = logging.getLogger("cove-wechat-supervisor")
+    logger = logging.getLogger("wechat-resonance-supervisor")
     logger.setLevel(logging.INFO)
     handler = RotatingFileHandler(
         LOG_PATH,

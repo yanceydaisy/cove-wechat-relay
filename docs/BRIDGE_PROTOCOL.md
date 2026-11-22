@@ -155,7 +155,7 @@ Bridge 也会在 Adapter 长轮询和 result ACK 时更新在线时间。
 
 ```text
 ChatGPT Work
-→ cove_bridge_reply
+→ wechat_bridge_reply
 → Bridge 创建稳定 command
 → Adapter GET /wechat/agent/next
 → Adapter 调官方微信 GUI

@@ -22,7 +22,7 @@ export class EventsError extends Error {
 }
 
 export const eventCatalog = [{
-  name: "cove.bridge.requested",
+  name: "wechat.bridge.requested",
   description: "A WeChat conversation is ready for ChatGPT to read and answer.",
   delivery: ["webhook"],
   inputSchema: {
@@ -60,7 +60,7 @@ type SubscribeParams = {
 };
 
 type Identity = {
-  name: "cove.bridge.requested";
+  name: "wechat.bridge.requested";
   arguments: { source: "wechat.dm" };
   url: string;
 };
@@ -74,7 +74,7 @@ function canonicalJson(value: unknown): string {
 }
 
 function parseIdentity(params: SubscribeParams): Identity {
-  if (params.name !== "cove.bridge.requested") {
+  if (params.name !== "wechat.bridge.requested") {
     throw new EventsError("The event name is not valid.");
   }
   if (params.delivery?.mode !== "webhook" || typeof params.delivery.url !== "string") {
@@ -93,7 +93,7 @@ function parseIdentity(params: SubscribeParams): Identity {
   }
 
   return {
-    name: "cove.bridge.requested",
+    name: "wechat.bridge.requested",
     arguments: { source: "wechat.dm" },
     url: params.delivery.url,
   };
@@ -272,7 +272,7 @@ export class EventsService {
         .update(bridgeEvent.id)
         .digest("hex")
         .slice(0, 32)}_r${wakeAttempt}`,
-      name: "cove.bridge.requested" as const,
+      name: "wechat.bridge.requested" as const,
       timestamp: emittedAt,
       data: {
         bridgeEventId: bridgeEvent.id,
@@ -288,7 +288,7 @@ export class EventsService {
       (item) =>
         item.active
         && item.refreshBefore > new Date().toISOString()
-        && item.name === "cove.bridge.requested"
+        && item.name === "wechat.bridge.requested"
         && item.arguments.source === "wechat.dm",
     );
 
@@ -298,7 +298,7 @@ export class EventsService {
   private async deliver(
     event: {
       eventId: string;
-      name: "cove.bridge.requested";
+      name: "wechat.bridge.requested";
       timestamp: string;
       data: Record<string, unknown>;
       cursor: null;

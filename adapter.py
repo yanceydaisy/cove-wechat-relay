@@ -15,7 +15,7 @@ from wechatauto.db import Listener
 from wechatauto.guia import WeChatGUI
 
 
-MUTEX_NAME = "Global\\CoveWechatAdapter"
+MUTEX_NAME = "Global\\WechatResonanceAdapter"
 JOURNAL_PATH = Path(__file__).resolve().parent / ".local" / "delivered_commands.json"
 JOURNAL_LIMIT = 2_000
 ACK_DELAYS = (0.0, 0.5, 1.0, 2.0, 4.0, 8.0, 8.0)
@@ -49,9 +49,9 @@ def required_setting(name: str) -> str:
     return value
 
 
-BRIDGE = required_setting("COVE_WECHAT_BRIDGE_URL").rstrip("/")
-TOKEN = required_setting("COVE_WECHAT_AGENT_TOKEN")
-TARGET = required_setting("COVE_WECHAT_TARGET")
+BRIDGE = required_setting("WECHAT_BRIDGE_URL").rstrip("/")
+TOKEN = required_setting("WECHAT_AGENT_TOKEN")
+TARGET = required_setting("WECHAT_TARGET")
 
 _mutex = ctypes.windll.kernel32.CreateMutexW(None, False, MUTEX_NAME)
 if ctypes.windll.kernel32.GetLastError() == 183:

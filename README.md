@@ -57,8 +57,8 @@ Windows 负责真实微信读写；VPS Bridge 负责排队、MCP Events 唤醒�
 - 监听指定微信私聊的**文字消息**
 - 把连续短消息合并成一轮对话
 - 通过 MCP Events 唤醒 ChatGPT Work
-- Work 使用 `cove_bridge_get_event` 读取当前微信消息
-- Work 使用 `cove_bridge_reply` 把回复送回微信
+- Work 使用 `wechat_bridge_get_event` 读取当前微信消息
+- Work 使用 `wechat_bridge_reply` 把回复送回微信
 - Bridge 长轮询下发待发送文字
 - Windows 侧确认真实发送结果并回 ACK
 - 稳定 command ID 与重复发送抑制
@@ -148,16 +148,16 @@ py -3.12 -m venv .venv
 设置三个 Windows **用户环境变量**：
 
 ```text
-COVE_WECHAT_BRIDGE_URL=https://your-bridge.example.com
-COVE_WECHAT_AGENT_TOKEN=<same token as VPS>
-COVE_WECHAT_TARGET=wxid_replace_me
+WECHAT_BRIDGE_URL=https://your-bridge.example.com
+WECHAT_AGENT_TOKEN=<same token as VPS>
+WECHAT_TARGET=wxid_replace_me
 ```
 
 其中：
 
-- `COVE_WECHAT_BRIDGE_URL`：VPS Bridge 的 HTTPS 地址
-- `COVE_WECHAT_AGENT_TOKEN`：Windows Adapter 专用 Bearer token
-- `COVE_WECHAT_TARGET`：允许监听和回复的单个微信会话 wxid
+- `WECHAT_BRIDGE_URL`：VPS Bridge 的 HTTPS 地址
+- `WECHAT_AGENT_TOKEN`：Windows Adapter 专用 Bearer token
+- `WECHAT_TARGET`：允许监听和回复的单个微信会话 wxid
 
 不要把真实 token 或 wxid 提交到 Git。
 
@@ -187,17 +187,17 @@ https://your-bridge.example.com/mcp/events/<MCP_EVENTS_PATH_TOKEN>
 
 ```text
 事件
-  cove.bridge.requested
+  wechat.bridge.requested
 
 工具
-  cove_bridge_get_event
-  cove_bridge_reply
+  wechat_bridge_get_event
+  wechat_bridge_reply
 ```
 
 然后在 Work 对话中订阅：
 
 ```text
-cove.bridge.requested
+wechat.bridge.requested
 {"source":"wechat.dm"}
 ```
 
@@ -260,8 +260,8 @@ WeChat text
 → VPS Bridge
 → MCP Events
 → ChatGPT Work
-→ cove_bridge_get_event
-→ cove_bridge_reply
+→ wechat_bridge_get_event
+→ wechat_bridge_reply
 → VPS Bridge
 → Windows Adapter
 → WeChat text
@@ -290,7 +290,7 @@ npm test
 - 项目与仓库更名为 **WeChat Resonance / 微信共振**，仓库地址为 `yanceydaisy/wechat-resonance`。
 - 补充本地 DB 收消息、GUI 发消息、DB 回读确认与 ACK 的具体技术路线，以及桌面解锁要求。
 - 区分公开官端源码与 Codex 架构分享。
-- 为兼容现有部署，`COVE_WECHAT_*` 环境变量、MCP 事件/工具 ID、Windows 计划任务与互斥锁标识保留。已有部署不必为了更名修改这些值。
+- **v0.2.0**：代码、工具、事件、环境变量、启动任务与互斥锁统一使用中性名称；旧标识不再作为运行接口。旧部署升级请按 [迁移指南](docs/MIGRATION.md) 重新配置并订阅。
 - 新部署文档使用 `wechat-resonance` 目录和服务名；已有 VPS 的安装目录、服务名可继续沿用，更新本地 git remote 即可。
 
 ```bash
@@ -299,6 +299,7 @@ git remote set-url origin https://github.com/yanceydaisy/wechat-resonance.git
 
 ## 文档
 
+- [v0.2.0 迁移指南](docs/MIGRATION.md)：环境变量、计划任务、工具与事件更新
 - **[端到端链路](docs/END_TO_END.md)**：从微信消息直到 ChatGPT 回微信
 - [VPS Bridge 部署](docs/VPS_BRIDGE.md)：Node.js、HTTPS、systemd、MCP Events
 - [ChatGPT Work MCP Events](docs/WORK_MCP_EVENTS.md)：插件、订阅、读取、回复、排错

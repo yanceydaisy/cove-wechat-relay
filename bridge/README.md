@@ -11,11 +11,11 @@
   - `POST /wechat/agent/heartbeat`
 - 同一会话的短消息 burst 合并
 - FIFO conversation queue
-- `cove.bridge.requested` MCP Event
+- `wechat.bridge.requested` MCP Event
 - MCP Events subscription 持久化
 - callback challenge、Standard Webhooks 风格签名与 callback URL 安全检查
-- `cove_bridge_get_event`
-- `cove_bridge_reply`
+- `wechat_bridge_get_event`
+- `wechat_bridge_reply`
 - Work wake watchdog
 - 稳定 command ID、发送 ACK 与重复发送抑制
 
@@ -90,15 +90,15 @@ tools/call
 事件：
 
 ```text
-cove.bridge.requested
+wechat.bridge.requested
 arguments: {"source":"wechat.dm"}
 ```
 
 工具：
 
 ```text
-cove_bridge_get_event
-cove_bridge_reply
+wechat_bridge_get_event
+wechat_bridge_reply
 ```
 
 ## 一次消息如何流动
@@ -108,10 +108,10 @@ Windows Adapter
   → POST /wechat/agent/events
   → burst buffer
   → conversation queue
-  → cove.bridge.requested webhook
+  → wechat.bridge.requested webhook
   → ChatGPT Work
-  → cove_bridge_get_event
-  → cove_bridge_reply
+  → wechat_bridge_get_event
+  → wechat_bridge_reply
   → outbound command
   → GET /wechat/agent/next
   → Windows 微信发送

@@ -29,11 +29,11 @@ https://bridge.example.com/mcp/events/<MCP_EVENTS_PATH_TOKEN>
 
 ```text
 事件
-  cove.bridge.requested
+  wechat.bridge.requested
 
 工具
-  cove_bridge_get_event
-  cove_bridge_reply
+  wechat_bridge_get_event
+  wechat_bridge_reply
 ```
 
 这里只需要填写你自己的 Bridge endpoint。Webhook callback URL 与签名 secret 会在订阅过程中由 ChatGPT 提供，不需要手动创建或写入配置。
@@ -42,15 +42,15 @@ https://bridge.example.com/mcp/events/<MCP_EVENTS_PATH_TOKEN>
 
 打开一个能够使用该插件的 Work 对话，然后发送：
 
-> 请订阅 MCP Event `cove.bridge.requested`，参数为 `{"source":"wechat.dm"}`。
+> 请订阅 MCP Event `wechat.bridge.requested`，参数为 `{"source":"wechat.dm"}`。
 >
-> 每次收到事件后，使用 `data.bridgeEventId` 调用 `cove_bridge_get_event` 读取当前微信消息。
+> 每次收到事件后，使用 `data.bridgeEventId` 调用 `wechat_bridge_get_event` 读取当前微信消息。
 >
-> 如果返回 `found=true` 且 `completed=false`，生成回复并调用 `cove_bridge_reply`。使用原 `bridgeEventId` 作为 `eventId`，把完整的用户可见回复放入 `messages[]`。
+> 如果返回 `found=true` 且 `completed=false`，生成回复并调用 `wechat_bridge_reply`。使用原 `bridgeEventId` 作为 `eventId`，把完整的用户可见回复放入 `messages[]`。
 >
 > 如果返回 `completed=true`，不要重复回复；如果返回 `blockedBy`，保持会话顺序，不绕过前一条消息。
 >
-> 微信用户正在原微信会话里等待，所以不要只在 Work 对话中显示答案；完整回复需要通过 `cove_bridge_reply` 返回微信。
+> 微信用户正在原微信会话里等待，所以不要只在 Work 对话中显示答案；完整回复需要通过 `wechat_bridge_reply` 返回微信。
 
 订阅成功后，Bridge 会保存 subscription。它不是 Windows 上额外运行的监听循环：有微信事件时，由 VPS Bridge 主动向 ChatGPT 提供的 webhook callback 发送通知。
 
@@ -84,7 +84,7 @@ Bridge 声明：
 Bridge 公布：
 
 ```text
-cove.bridge.requested
+wechat.bridge.requested
 ```
 
 当前唯一 filter：
@@ -114,7 +114,7 @@ Bridge 发送的应用事件结构类似：
 ```json
 {
   "eventId": "evt_bridge_<digest>_r0",
-  "name": "cove.bridge.requested",
+  "name": "wechat.bridge.requested",
   "timestamp": "<ISO-8601>",
   "data": {
     "bridgeEventId": "wechat-burst:<digest>",
@@ -135,7 +135,7 @@ Bridge 发送的应用事件结构类似：
 data.bridgeEventId
 ```
 
-## 5. 先调用 `cove_bridge_get_event`
+## 5. 先调用 `wechat_bridge_get_event`
 
 输入：
 
@@ -185,7 +185,7 @@ data.bridgeEventId
 
 此时保持 FIFO 顺序，不要越过前一条。
 
-## 6. 再调用 `cove_bridge_reply`
+## 6. 再调用 `wechat_bridge_reply`
 
 输入：
 
@@ -206,7 +206,7 @@ data.bridgeEventId
 
 Bridge 会为每条 bubble 创建稳定 command ID，并等待 Windows Adapter 实际发送。
 
-所以 `cove_bridge_reply` 的完成状态不仅表示“模型写出了答案”，还与微信端真实发送回执有关。
+所以 `wechat_bridge_reply` 的完成状态不仅表示“模型写出了答案”，还与微信端真实发送回执有关。
 
 ## 7. 如何判断链路走到哪一步
 
@@ -244,7 +244,7 @@ MCP Events webhook 的 2xx 是异步接收确认。
 
 watchdog 会保留同一个 `bridgeEventId`，在等待后重新发出新的唤醒通知。这样微信用户不需要为了上游一次执行中断而重新发送原消息。
 
-一旦 `cove_bridge_reply` 已进入实际发送流程，watchdog 会停止并行唤醒该事件，避免产生两份回复。
+一旦 `wechat_bridge_reply` 已进入实际发送流程，watchdog 会停止并行唤醒该事件，避免产生两份回复。
 
 ## 9. 排错
 
