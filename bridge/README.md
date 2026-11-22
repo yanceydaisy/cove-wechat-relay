@@ -1,6 +1,6 @@
-# Cove WeChat Relay Bridge
+# WeChat Resonance Bridge
 
-这是 Cove WeChat Relay 的 VPS 侧最小实现，只保留 **微信文字消息 → MCP Events → ChatGPT Work → 微信文字回复** 所需的功能。
+这是 WeChat Resonance 的 VPS 侧最小实现，只保留 **微信文字消息 → MCP Events → ChatGPT Work → 微信文字回复** 所需的功能。
 
 ## 包含什么
 
@@ -19,7 +19,7 @@
 - Work wake watchdog
 - 稳定 command ID、发送 ACK 与重复发送抑制
 
-不包含图片、语音、文件、朋友圈或其他 Cove 私有模块。
+不包含图片、语音、文件、朋友圈或其他私有业务模块。
 
 ## 环境
 

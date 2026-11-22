@@ -10,7 +10,7 @@ Windows PC
 └─ Cove WeChat Adapter
        │ HTTPS
        ▼
-VPS Cove Bridge
+VPS Bridge
        │ MCP Events
        ▼
 ChatGPT Work
@@ -21,8 +21,8 @@ ChatGPT Work
 需要 Windows 10 / 11、已登录的官方微信桌面版 4.x、Python 3.12+ 和 Git。
 
 ```powershell
-git clone https://github.com/yanceydaisy/cove-wechat-relay.git
-cd cove-wechat-relay
+git clone https://github.com/yanceydaisy/wechat-resonance.git
+cd wechat-resonance
 py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```

@@ -22,7 +22,7 @@ export async function deliverBridgeReply(
   const outstanding = queue.getOutstandingRequiredReplyEvent();
   const requested = queue.getEvent(input.eventId);
   const event = outstanding ?? requested;
-  if (!event) throw new Error(`Unknown Cove Bridge event: ${input.eventId}`);
+  if (!event) throw new Error(`Unknown Bridge event: ${input.eventId}`);
 
   const resolvedEventId = event.id;
   if (input.eventId !== resolvedEventId) {
@@ -85,7 +85,7 @@ export async function deliverBridgeReply(
     };
   } catch (error) {
     console.warn(
-      `Cove WeChat reply deferred: eventId=${resolvedEventId} sent=${sentCount}/${normalized.length}`,
+      `WeChat reply deferred: eventId=${resolvedEventId} sent=${sentCount}/${normalized.length}`,
       error instanceof Error ? error.message : error,
     );
 
@@ -106,7 +106,7 @@ export async function deliverBridgeReply(
           nextIndex = sentCount;
         } catch (backgroundError) {
           console.warn(
-            `Cove WeChat background retry: eventId=${resolvedEventId} index=${nextIndex}`,
+            `WeChat background retry: eventId=${resolvedEventId} index=${nextIndex}`,
             backgroundError instanceof Error ? backgroundError.message : backgroundError,
           );
           await new Promise<void>((resolve) => setTimeout(resolve, 3_000));
@@ -117,7 +117,7 @@ export async function deliverBridgeReply(
       wechatRelay.forgetEvent(resolvedEventId);
       await onCompleted?.();
       console.log(
-        `Cove WeChat reply delivered in background: eventId=${resolvedEventId} messages=${normalized.length}`,
+        `WeChat reply delivered in background: eventId=${resolvedEventId} messages=${normalized.length}`,
       );
     })();
 

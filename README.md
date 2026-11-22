@@ -1,27 +1,40 @@
-# Cove WeChat Relay
+# WeChat Resonance
 
-**Built by Yancey & Cove**
+让 AI 通过工具调用使用 **Windows 官方微信 4.x**：本地适配器读取私聊文字，AI 生成回复，再由 **微信 GUI 自动化** 把文字发回原会话。
 
-把 **Windows 官方微信 4.x** 的私聊文字消息接到 **ChatGPT 官端 / Work**，再把回复送回微信。
+## 技术核心：本地 DB 读取 + 微信 GUI 自动化
+
+Windows 侧基于 `wechatauto-replica`。AI 通过 Bridge 下发结构化回复，真正执行微信窗口操作的是 Windows 适配器。
+
+| 环节 | 实际执行方式 |
+| --- | --- |
+| 收消息 | `WeChatDB` + `Listener` 从本地微信数据库读取指定会话的新文字；生成 `eventId`，通过 HTTPS 上报 VPS。 |
+| 让 AI 处理 | 官端通过 MCP Events 唤醒 Work，模型调用读取/回复工具；Codex 路线由服务端请求网关并续接对应 thread。 |
+| 发消息 | Windows 长轮询取回待发指令，调用 `WeChatGUI.send_msg(text, who, verify=True)`，打开会话、输入文字并发送。 |
+| 确认结果 | 发送后回读本地微信数据库，确认新发出的消息，再向 VPS 回报 ACK；已完成的 command 不重复发送。 |
+
+GUI 发送优先使用 UIA，必要时走 Win32 窗口定位、坐标与 Windows OCR，配合剪贴板粘贴和点击发送。微信必须保持登录，Windows 桌面需要解锁并能操作微信窗口；锁屏或交互会话断开会影响 GUI 发送。
+
+**两条 AI 路线共用这套 Windows 收发层。** 本仓库提供的是 **官端 GPT / Work 的最小文字版源码**；Codex 的持久化 inbox、网关和前端同步属于另一条实现路线，目前仅分享架构思路。
 
 本项目按实际验证的官端链路设计：
 
-**Windows WeChat → Cove WeChat Adapter → VPS Bridge → MCP Events → ChatGPT Work → VPS Bridge → Windows WeChat**
+**Windows WeChat → Windows Adapter → VPS Bridge → MCP Events → ChatGPT Work → VPS Bridge → Windows WeChat**
 
 如果你要迁移到 API、第三方前端或其他 MCP Host，可以基于现有协议自行调整 Bridge、唤醒和工具调用方式。
 
 > 当前公开版只保留 **文字聊天接力**。图片、语音、文件、朋友圈、拍一拍等能力不在 v0 范围内。
 
-![Cove WeChat Relay 端到端消息流](assets/architecture-flow.svg)
+![WeChat Resonance 端到端消息流](assets/architecture-flow.svg)
 
 ## 仓库里有什么
 
 ```text
-cove-wechat-relay/
+wechat-resonance/
 ├─ adapter.py                 # Windows 微信文字收发
 ├─ supervisor.py              # 等待微信、拉起 Adapter、崩溃重启
 ├─ install-autostart.ps1      # Windows 登录后自动启动
-├─ bridge/                    # VPS 侧最小 Cove Bridge
+├─ bridge/                    # VPS 侧最小 Bridge
 │  ├─ src/
 │  │  ├─ wechat/              # ingress / long poll / ACK / burst
 │  │  └─ events/              # MCP Events / webhook / watchdog
@@ -63,6 +76,7 @@ Windows 负责真实微信读写；VPS Bridge 负责排队、MCP Events 唤醒�
 
 - Windows 10 / 11
 - 官方微信桌面版 4.x，且已登录
+- Windows 交互桌面保持解锁，微信窗口可操作
 - Python 3.12+
 - `wechatauto-replica`
 
@@ -91,8 +105,8 @@ MCP Events 的实际可用范围以 ChatGPT 当前产品和工作空间设置为
 克隆仓库：
 
 ```bash
-git clone https://github.com/yanceydaisy/cove-wechat-relay.git
-cd cove-wechat-relay/bridge
+git clone https://github.com/yanceydaisy/wechat-resonance.git
+cd wechat-resonance/bridge
 ```
 
 安装、检查并构建：
@@ -268,6 +282,20 @@ npm test
 需要图片、语音、文件、朋友圈、拍一拍或更多微信桌面自动化能力时，可以直接参考上游 `wechatauto-replica` 按需扩展。
 
 如果你使用 API、第三方 ChatGPT 前端或其他 MCP Host，也可以基于本仓库现有 HTTP / MCP 结构自行迁移；相关运行方式和兼容性调整请根据自己的环境处理。
+
+## 更新日志
+
+### 2026-11-22
+
+- 项目与仓库更名为 **WeChat Resonance / 微信共振**，仓库地址为 `yanceydaisy/wechat-resonance`。
+- 补充本地 DB 收消息、GUI 发消息、DB 回读确认与 ACK 的具体技术路线，以及桌面解锁要求。
+- 区分公开官端源码与 Codex 架构分享。
+- 为兼容现有部署，`COVE_WECHAT_*` 环境变量、MCP 事件/工具 ID、Windows 计划任务与互斥锁标识保留。已有部署不必为了更名修改这些值。
+- 新部署文档使用 `wechat-resonance` 目录和服务名；已有 VPS 的安装目录、服务名可继续沿用，更新本地 git remote 即可。
+
+```bash
+git remote set-url origin https://github.com/yanceydaisy/wechat-resonance.git
+```
 
 ## 文档
 

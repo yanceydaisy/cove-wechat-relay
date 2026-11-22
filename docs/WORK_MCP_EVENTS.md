@@ -1,6 +1,6 @@
 # ChatGPT Work：订阅 MCP Events 并把回复送回微信
 
-本页说明 Cove WeChat Relay 默认的 **ChatGPT 官端 / Work** 工作流。它不是 OpenAI API 方案。
+本页说明 WeChat Resonance 默认的 **ChatGPT 官端 / Work** 工作流。它不是 OpenAI API 方案。
 
 ## 准备条件
 

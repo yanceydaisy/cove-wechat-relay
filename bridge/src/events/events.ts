@@ -31,7 +31,7 @@ export const eventCatalog = [{
       source: {
         type: "string",
         enum: ["wechat.dm"],
-        description: "The Cove WeChat Relay conversation source to monitor.",
+        description: "The WeChat Resonance conversation source to monitor.",
       },
     },
     required: ["source"],

@@ -152,6 +152,6 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`Cove WeChat Relay Bridge listening on http://${HOST}:${PORT}`);
+  console.log(`WeChat Resonance Bridge listening on http://${HOST}:${PORT}`);
   console.log(`MCP Events endpoint mounted at /mcp/events/<private-token>`);
 });

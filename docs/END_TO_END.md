@@ -2,11 +2,11 @@
 
 > **范围：文字流 v0。** 本仓库同时包含 Windows Adapter 与 VPS Bridge，默认链路为：
 >
-> **Windows 官方微信 → Windows Adapter → VPS Cove Bridge → MCP Events → ChatGPT Work → Cove Bridge → Windows 微信**
+> **Windows 官方微信 → Windows Adapter → VPS Bridge → MCP Events → ChatGPT Work → Cove Bridge → Windows 微信**
 
 ## 整体架构
 
-![Cove WeChat Relay 端到端消息流](../assets/architecture-flow.svg)
+![WeChat Resonance 端到端消息流](../assets/architecture-flow.svg)
 
 这不是让 Windows 微信直接调用 OpenAI API。模型推理发生在 ChatGPT 官端的 Work 运行中；Windows 负责真实微信读写，VPS Bridge 负责接力、管理会话状态、发送 MCP Events 通知和回收回复。
 
@@ -15,7 +15,7 @@
 | 位置 | 运行组件 | 主要职责 |
 | --- | --- | --- |
 | Windows | 官方微信、Python Adapter、Supervisor | 读取微信文字、发送回复、确认真实发送结果、保持在线 |
-| VPS | Cove WeChat Relay Bridge、HTTPS 反向代理 | 接收入站、合并 burst、排队、MCP Events、reply command、ACK |
+| VPS | WeChat Resonance Bridge、HTTPS 反向代理 | 接收入站、合并 burst、排队、MCP Events、reply command、ACK |
 | ChatGPT 官端 | Work 对话、已连接的 MCP 插件 | 接收事件、读取当前微信消息、生成回复、调用 reply 工具 |
 
 ## 从零部署

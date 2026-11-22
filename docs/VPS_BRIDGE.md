@@ -1,12 +1,12 @@
 # VPS Bridge 部署
 
-本仓库的 `bridge/` 是可独立运行的文字版 Cove Bridge。它负责连接 Windows Adapter 与 ChatGPT Work：
+本仓库的 `bridge/` 是可独立运行的文字版 Bridge。它负责连接 Windows Adapter 与 ChatGPT Work：
 
 ```text
 Windows Adapter
       │ HTTPS + Bearer token
       ▼
-VPS Cove Bridge
+VPS Bridge
       ├─ /wechat/agent/events
       ├─ /wechat/agent/next
       ├─ /wechat/agent/result
@@ -48,8 +48,8 @@ npm --version
 ## 2. 安装
 
 ```bash
-git clone https://github.com/yanceydaisy/cove-wechat-relay.git
-cd cove-wechat-relay/bridge
+git clone https://github.com/yanceydaisy/wechat-resonance.git
+cd wechat-resonance/bridge
 
 npm ci
 npm run typecheck
@@ -68,7 +68,7 @@ PORT=8787
 HOST=127.0.0.1
 WECHAT_AGENT_TOKEN=<long-random-token>
 MCP_EVENTS_PATH_TOKEN=<long-url-safe-random-token>
-MCP_EVENTS_STORE_PATH=/var/lib/cove-wechat-relay/mcp-event-subscriptions.json
+MCP_EVENTS_STORE_PATH=/var/lib/wechat-resonance/mcp-event-subscriptions.json
 ```
 
 ### `WECHAT_AGENT_TOKEN`
@@ -144,17 +144,17 @@ Bridge 默认绑定 `127.0.0.1`，因此公网只需要暴露反向代理的 443
 
 ```ini
 [Unit]
-Description=Cove WeChat Relay Bridge
+Description=WeChat Resonance Bridge
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-User=cove-relay
-Group=cove-relay
-WorkingDirectory=/opt/cove-wechat-relay/bridge
-EnvironmentFile=/etc/cove-wechat-relay/bridge.env
-ExecStart=/usr/bin/node /opt/cove-wechat-relay/bridge/dist/src/server.js
+User=wechat-relay
+Group=wechat-relay
+WorkingDirectory=/opt/wechat-resonance/bridge
+EnvironmentFile=/etc/wechat-resonance/bridge.env
+ExecStart=/usr/bin/node /opt/wechat-resonance/bridge/dist/src/server.js
 Restart=always
 RestartSec=5
 
@@ -166,9 +166,9 @@ WantedBy=multi-user.target
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable --now cove-wechat-relay
-systemctl status cove-wechat-relay
-journalctl -u cove-wechat-relay -n 100 --no-pager
+sudo systemctl enable --now wechat-resonance
+systemctl status wechat-resonance
+journalctl -u wechat-resonance -n 100 --no-pager
 ```
 
 更新代码时建议先查看 `/health`。当前 conversation queue 和未完成 command 仍含内存状态，因此有正在处理的消息时不要随意重启服务。

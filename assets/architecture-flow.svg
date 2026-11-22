@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1120" height="1500" viewBox="0 0 1120 1500" role="img" aria-labelledby="title desc">
-<title id="title">Cove WeChat Relay 端到端消息流</title>
-<desc id="desc">Windows 官方微信通过本地 Adapter、VPS Cove Bridge 和 MCP Events 唤醒 ChatGPT Work，再将回复送回微信。</desc>
+<title id="title">WeChat Resonance 端到端消息流</title>
+<desc id="desc">Windows 官方微信通过本地 Adapter、VPS Bridge 和 MCP Events 唤醒 ChatGPT Work，再将回复送回微信。</desc>
 <defs>
   <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
     <stop offset="0" stop-color="#f8fbff"/>
@@ -83,7 +83,7 @@
   <circle cx="29" cy="6" r="2.2" fill="#fff"/><circle cx="29" cy="22" r="2.2" fill="#fff"/><circle cx="29" cy="38" r="2.2" fill="#fff"/>
 </g>
 <text x="450" y="401" class="sans title">VPS</text>
-<text x="414" y="462" class="sans body" font-weight="700">Cove Bridge</text>
+<text x="414" y="462" class="sans body" font-weight="700">Bridge</text>
 <text x="438" y="503" class="sans body">├─ 接收、去重、整理事件</text>
 <text x="438" y="542" class="sans body">├─ 会话队列 / required reply</text>
 <text x="438" y="581" class="sans body">├─ MCP Events 订阅管理</text>
