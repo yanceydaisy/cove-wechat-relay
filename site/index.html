@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="zh-CN" data-route="official">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#1b1b1a">
+    <meta name="description" content="WeChat Resonance：把 Windows 官方微信接入 ChatGPT Work 或 Codex 运行环境的双路线工程手记。">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="WeChat Resonance">
+    <meta property="og:description" content="Two routes. One conversation. 一条微信消息，两种 AI 运行路径。">
+    <meta property="og:url" content="https://wechat-resonance.pages.dev/">
+    <meta property="og:image" content="https://wechat-resonance.pages.dev/og-card.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="WeChat Resonance">
+    <meta name="twitter:description" content="Two routes. One conversation.">
+    <meta name="twitter:image" content="https://wechat-resonance.pages.dev/og-card.png">
+    <link rel="canonical" href="https://wechat-resonance.pages.dev/">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="style.css">
+    <title>WeChat Resonance — 微信双路消息链</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#content">跳到正文</a>
+    <header class="topbar">
+      <a class="wordmark" href="#top" aria-label="WeChat Resonance 首页"><span class="wordmark-book" aria-hidden="true"><i></i></span><span>WeChat Resonance</span></a>
+      <nav aria-label="页面导航"><a href="#routes">两册路径</a><a href="#evidence">验证手记</a><a href="#boundary">公开边界</a></nav>
+      <a class="repo-link" href="https://github.com/yanceydaisy/cove-wechat-relay" target="_blank" rel="noreferrer">官端源码</a>
+    </header>
+
+    <main id="content">
+      <section class="desk hero" id="top" aria-labelledby="hero-title">
+        <div class="lace-rail" aria-hidden="true"></div>
+        <img class="hero-butterfly" src="assets/cabinet-butterfly.svg" alt="">
+        <img class="hero-score" src="assets/cabinet-score.svg" alt="">
+        <article class="hero-folio">
+          <span class="folio-burn" aria-hidden="true"></span>
+          <span class="engraved-corner engraved-corner--tl" aria-hidden="true"></span>
+          <span class="engraved-corner engraved-corner--br" aria-hidden="true"></span>
+          <img class="folio-acanthus" src="assets/engraved-acanthus.svg" alt="">
+          <div class="hero-copy">
+            <p class="folio-date">Field folio · Windows WeChat 4.x · 2026</p>
+            <h1 id="hero-title"><span>WeChat</span><strong>Resonance</strong></h1>
+            <p class="hero-cn">微信共振</p>
+            <p class="hero-lede">一条微信消息，两册不同的去处。</p>
+            <p class="hero-body">本地收发、鉴权、排队和回执写在同一套协议里；模型入口则分别装订进 ChatGPT Work 与 Codex。这里公开连接方法，也诚实标注尚未验证的页码。</p>
+          </div>
+          <div class="route-cabinet" aria-label="切换阅读的路线">
+            <p class="cabinet-caption">Choose a volume</p>
+            <div class="book-row" role="group" aria-label="选择路线">
+              <button class="route-book route-book--official is-active" type="button" data-route-button="official" aria-pressed="true">
+                <span class="book-spine">I</span><span class="book-cover-copy"><small>OPEN EDITION</small><b>Official</b><em>ChatGPT Work</em></span>
+              </button>
+              <button class="route-book route-book--codex" type="button" data-route-button="codex" aria-pressed="false">
+                <span class="book-spine">II</span><span class="book-cover-copy"><small>PRIVATE EDITION</small><b>Codex</b><em>Daily system</em></span>
+              </button>
+            </div>
+            <div class="cabinet-shelf" aria-hidden="true"></div>
+          </div>
+          <aside class="route-slip" aria-live="polite">
+            <span class="route-slip-pin" aria-hidden="true"></span>
+            <p data-route-text="edition">官端卷 · 可复现基线</p>
+            <h2 data-route-text="title">从微信，抵达 ChatGPT Work</h2>
+            <ol>
+              <li data-route-step="0">Windows Adapter 读取白名单私聊</li>
+              <li data-route-step="1">VPS Bridge 合并消息并排队</li>
+              <li data-route-step="2">MCP Events 唤醒 ChatGPT Work</li>
+              <li data-route-step="3">发送确认与 ACK 回到微信</li>
+            </ol>
+            <dl>
+              <div><dt>Wake</dt><dd data-route-text="wake">MCP Events</dd></div>
+              <div><dt>Runtime</dt><dd data-route-text="runtime">ChatGPT Work</dd></div>
+              <div><dt>Source</dt><dd data-route-text="source">Open source</dd></div>
+            </dl>
+          </aside>
+          <span class="red-thread" aria-hidden="true"><i></i></span>
+          <a class="hero-repo" href="https://github.com/yanceydaisy/cove-wechat-relay" target="_blank" rel="noreferrer">翻阅官端实现</a>
+        </article>
+        <p class="desk-note">Two routes · one transport · one conversation</p>
+      </section>
+
+      <section class="foldout" aria-labelledby="atlas-title">
+        <div class="foldout-label"><span>消息图谱</span><i>01</i></div>
+        <div class="atlas-copy"><p>分岔发生在模型入口，<br>不发生在微信这一端。</p><h2 id="atlas-title">同一根线，穿过不同的书脊。</h2></div>
+        <div class="stitched-route" aria-label="当前路线的消息流">
+          <div class="route-stop"><span>微信</span><small>Windows 4.x</small></div><i aria-hidden="true"></i>
+          <div class="route-stop"><span>本地</span><small>Adapter</small></div><i aria-hidden="true"></i>
+          <div class="route-stop"><span>桥</span><small>Queue · ACK</small></div><i aria-hidden="true"></i>
+          <div class="route-stop route-stop--changing"><span data-route-text="stop">Work</span><small data-route-text="wake">MCP Events</small></div><i aria-hidden="true"></i>
+          <div class="route-stop"><span>回复</span><small>same protocol</small></div>
+        </div>
+        <p class="atlas-margin">消息有稳定事件 ID；短消息可以合并；发送完成后才回 ACK。模型可以换，传输协议不用推倒重来。</p>
+      </section>
+
+      <section class="routes-section" id="routes" aria-labelledby="routes-title">
+        <div class="section-intro"><p>Two bound volumes</p><h2 id="routes-title">官端与 Codex，<br>各自装订，彼此对照。</h2></div>
+        <div class="volume-pair">
+          <article class="volume-sheet volume-sheet--official">
+            <span class="sheet-tape sheet-tape--left" aria-hidden="true"></span><div class="volume-number">I</div>
+            <p class="volume-kicker">Official route / public edition</p><h3>官端路线</h3>
+            <p class="volume-deck">可复现、可部署、已经开源。它保持最小，只证明文字聊天接力这条基线。</p>
+            <ol>
+              <li><b>Capture</b><span>读取指定私聊，生成稳定事件 ID。</span></li><li><b>Queue</b><span>Bridge 合并短消息，重复事件不会再建一轮。</span></li>
+              <li><b>Wake</b><span>MCP Events 将一轮消息送入 ChatGPT Work。</span></li><li><b>Acknowledge</b><span>真实发送完成后回 ACK，避免重复气泡。</span></li>
+            </ol>
+            <a href="https://github.com/yanceydaisy/cove-wechat-relay" target="_blank" rel="noreferrer">查看公开仓库</a><img class="volume-mark" src="assets/engraved-acanthus.svg" alt="">
+          </article>
+          <article class="volume-sheet volume-sheet--codex">
+            <span class="sheet-tape sheet-tape--right" aria-hidden="true"></span><div class="volume-number">II</div>
+            <p class="volume-kicker">Codex route / private edition</p><h3>Codex 路线</h3>
+            <p class="volume-deck">日常自用的工作系统。分享架构与迁移方法，个人登录态、消息和源码仍留在封面之内。</p>
+            <ol>
+              <li><b>Durable inbox</b><span>入站消息先持久化，断网恢复后继续投递。</span></li><li><b>Workspace</b><span>进入 Codex 会话与工具环境，而非另造聊天前端。</span></li>
+              <li><b>Media</b><span>图片、表情与桌面能力按验证状态逐项扩展。</span></li><li><b>Private data</b><span>token、wxid、真实消息和私有配置不进入公开仓库。</span></li>
+            </ol>
+            <p class="sealed-note"><span aria-hidden="true">C</span>Architecture shared · source private</p><img class="volume-mark" src="assets/cabinet-bookmark.svg" alt="">
+          </article>
+        </div>
+      </section>
+
+      <section class="ledger-section" id="evidence" aria-labelledby="evidence-title">
+        <img class="ledger-butterfly" src="assets/cabinet-butterfly.svg" alt="">
+        <article class="ledger-paper">
+          <span class="ledger-lace ledger-lace--top" aria-hidden="true"></span><span class="ledger-lace ledger-lace--bottom" aria-hidden="true"></span>
+          <header><p>Evidence ledger · revised after field tests</p><h2 id="evidence-title">只把真实验证过的，<br>写成“可用”。</h2></header>
+          <div class="evidence-table" role="table" aria-label="两种路线的验证范围">
+            <div class="evidence-row evidence-row--head" role="row"><span role="columnheader">能力</span><span role="columnheader">官端开源版</span><span role="columnheader">Codex 自用版</span></div>
+            <div class="evidence-row" role="row"><span role="cell">私聊文字闭环</span><span role="cell"><i class="stamp stamp--done">已验证</i></span><span role="cell"><i class="stamp stamp--done">日常运行</i></span></div>
+            <div class="evidence-row" role="row"><span role="cell">去重、长轮询与发送 ACK</span><span role="cell"><i class="stamp stamp--done">已实现</i></span><span role="cell"><i class="stamp stamp--done">已扩展</i></span></div>
+            <div class="evidence-row" role="row"><span role="cell">图片入站</span><span role="cell"><i class="stamp stamp--out">边界之外</i></span><span role="cell"><i class="stamp stamp--lab">实验链路</i></span></div>
+            <div class="evidence-row" role="row"><span role="cell">原生动态表情出站</span><span role="cell"><i class="stamp stamp--out">边界之外</i></span><span role="cell"><i class="stamp stamp--lab">待真机复验</i></span></div>
+            <div class="evidence-row" role="row"><span role="cell">朋友圈读取、点赞与评论</span><span role="cell"><i class="stamp stamp--out">边界之外</i></span><span role="cell"><i class="stamp stamp--lab">内部扩展</i></span></div>
+          </div>
+          <p class="ledger-footnote">公开版故意保持最小。私有路线中的媒体与朋友圈能力处于不同验证阶段；这里不用演示替代端到端证据。</p>
+        </article>
+      </section>
+
+      <section class="boundary-section" id="boundary" aria-labelledby="boundary-title">
+        <div class="boundary-letter">
+          <span class="letter-fold" aria-hidden="true"></span><p>公开边界</p><h2 id="boundary-title">分享连接方法，<br>不分享连接中的人。</h2>
+          <div class="boundary-rules"><p><b>公开</b>消息协议、可靠性设计、部署步骤、官端最小实现。</p><p><b>保留</b>Codex 私有源码、登录态、token、wxid、真实消息与个人数据。</p><p><b>上游</b>Windows 微信读写由 <a href="https://github.com/fanyuantaier/wechatauto-replica" target="_blank" rel="noreferrer">wechatauto-replica</a> 提供。</p></div>
+          <span class="wax-seal" aria-hidden="true">WR</span>
+        </div>
+        <img class="boundary-score" src="assets/cabinet-score.svg" alt="">
+      </section>
+
+      <section class="closing" aria-labelledby="closing-title">
+        <p>WeChat Resonance</p><h2 id="closing-title">Two routes.<br>One conversation.</h2>
+        <a href="https://github.com/yanceydaisy/cove-wechat-relay" target="_blank" rel="noreferrer">Read the official volume on GitHub</a><img src="assets/engraved-acanthus.svg" alt="">
+      </section>
+    </main>
+    <footer><span>A field folio by Yancey · 2026</span><span>Built from tested message paths.</span></footer>
+    <script src="app.js" defer></script>
+  </body>
+</html>

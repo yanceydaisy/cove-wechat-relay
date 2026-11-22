@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 146" fill="none">
+<defs><linearGradient id="metal" x1="20" y1="2" x2="152" y2="136" gradientUnits="userSpaceOnUse"><stop stop-color="#6d5c3b"/><stop offset=".33" stop-color="#d4bf84"/><stop offset=".57" stop-color="#967d4c"/><stop offset=".77" stop-color="#e4d29b"/><stop offset="1" stop-color="#6e5b3a"/></linearGradient><g id="wing"><path d="M87 69C75 44 37 3 15 12C-1 20 13 56 29 68C6 74 20 115 44 121C64 126 78 97 87 80Z" fill="url(#metal)" fill-rule="evenodd"/><path d="M78 64C67 42 34 13 21 19C11 26 26 55 37 61C49 68 65 65 78 64ZM72 73C55 69 35 69 28 77C23 86 35 107 46 109C57 112 69 90 72 73Z" fill="#e6d7a1"/>
+<!-- Pierced cells: transparent holes rather than printed shapes. -->
+<path d="M86 69C73 45 37 3 15 12C-1 20 13 56 29 68C6 74 20 115 44 121C64 126 78 97 86 80ZM75 58C65 38 39 18 27 21C35 38 50 52 75 58ZM27 26C22 23 18 24 21 35C25 46 32 55 40 59L42 47ZM45 29L44 41L60 51L57 40ZM49 62L63 62L50 53L45 53ZM29 79C25 89 36 104 44 106L47 92L42 77ZM49 78L52 96L65 78ZM55 101L50 109L57 105L65 89Z" fill="url(#metal)" fill-rule="evenodd"/>
+<g stroke="#665333" stroke-width=".7" opacity=".8"><path d="M16 17C6 31 23 60 34 66M23 75C13 86 31 114 44 116M82 69L38 67M77 72L47 112"/><path d="M27 17L30 23M40 23L43 28M52 34L54 39M66 49L69 53M25 83L29 85M31 99L35 99M42 111L43 115"/></g>
+<g fill="none" stroke="#d9c48d" stroke-width="1.1"><path d="M15 12C5 19 9 37 17 50M22 110C29 120 41 126 50 119"/></g></g><mask id="holes"><path fill="white" d="M0 0H180V146H0Z"/><path fill="black" d="M75 58C65 38 39 18 27 21C35 38 50 52 75 58ZM27 26C22 23 18 24 21 35C25 46 32 55 40 59L42 47ZM45 29L44 41L60 51L57 40ZM49 62L63 62L50 53L45 53ZM29 79C25 89 36 104 44 106L47 92L42 77ZM49 78L52 96L65 78ZM55 101L50 109L57 105L65 89Z"/><path fill="black" transform="translate(176) scale(-1 1)" d="M75 58C65 38 39 18 27 21C35 38 50 52 75 58ZM27 26C22 23 18 24 21 35C25 46 32 55 40 59L42 47ZM45 29L44 41L60 51L57 40ZM49 62L63 62L50 53L45 53ZM29 79C25 89 36 104 44 106L47 92L42 77ZM49 78L52 96L65 78ZM55 101L50 109L57 105L65 89Z"/></mask></defs>
+<g mask="url(#holes)"><use href="#wing"/><use href="#wing" transform="translate(176) scale(-1 1)"/></g>
+<path d="M88 58C80 37 76 32 72 33M90 58C98 37 102 32 108 34" stroke="#8e784b" stroke-width="1.4"/>
+<path d="M88 54C81 55 82 86 88 102C95 86 96 55 88 54Z" fill="url(#metal)" stroke="#715d39"/>
+<path d="M87 60L87 88M85 66H92M85 73H92M86 80H91" stroke="#e1cd94" stroke-width=".8"/>
+<path d="M88 102L85 113M89 102L92 111" stroke="#8e784b" stroke-width="1.2"/>
+</svg>
+
